@@ -1,5 +1,17 @@
 {
+    "editor.minimap.enabled": false,
+    "files.autoSave": "afterDelay",
+    "workbench.colorTheme": "Default High Contrast Light",
+    "workbench.iconTheme": "material-icon-theme",
+    "git.confirmSync": false,
+    "git.enableSmartCommit": true,
+    "python.createEnvironment.trigger": "off",
+    "material-icon-theme.folders.associations": {
+        "cpp": "src",
+        "compile": "dist"
+    },
     "files.associations": {
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "xstring": "cpp"
     }
 }

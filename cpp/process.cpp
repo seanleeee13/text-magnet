@@ -2,10 +2,10 @@
 
 using namespace std;
 
-void hello() {
+extern "C" __declspec(dllexport) void hello() {
     cout << "Hello C++!\n";
 }
 
-string get() {
+extern "C" __declspec(dllexport) const char* get() {
     return "Hello Python!";
 }
