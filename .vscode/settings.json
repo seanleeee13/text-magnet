@@ -1,5 +1,4 @@
 {
-    "editor.minimap.enabled": false,
     "files.autoSave": "afterDelay",
     "workbench.colorTheme": "Default High Contrast Light",
     "workbench.iconTheme": "material-icon-theme",
