@@ -1,5 +1,7 @@
-from ctypes import CDLL, c_char_p
+from ctypes import CDLL
+from tkinter import *
 import sqlite3
+import json
 import os
 
 class DBManager:
@@ -45,13 +47,23 @@ class DBManager:
             self.conn.commit()
             self.conn.close()
 
+class TkPageFrame(Frame):
+    def __init__(self, master=None, cnf={}, **kw):
+        kw["name"] = "tkpageframe"
+        super().__init__(master, cnf, **kw)
+
 cols = """id INTEGER PRIMARY KEY AUTOINCREMENT,
 username TEXT NOT NULL UNIQUE,
 password TEXT NOT NULL,
 score INTEGER DEFAULT 0"""
 
-os.add_dll_directory(os.path.abspath("."))
-c_test = CDLL("C:\\Text-Magnet\\text-magnet\\process.dll")
-c_test.hello()
-c_test.get.restype = c_char_p
-print(c_test.get().decode())
+with open("./data/words.json", "r") as f:
+    words = json.load(f)
+
+
+
+# os.add_dll_directory(os.path.abspath("."))
+# c_test = CDLL("C:\\Text-Magnet\\text-magnet\\process.dll")
+# c_test.hello()
+# c_test.get.restype = c_char_p
+# print(c_test.get().decode())
