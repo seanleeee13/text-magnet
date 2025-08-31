@@ -59,11 +59,3 @@ score INTEGER DEFAULT 0"""
 
 with open("./data/words.json", "r") as f:
     words = json.load(f)
-
-
-
-# os.add_dll_directory(os.path.abspath("."))
-# c_test = CDLL("C:\\Text-Magnet\\text-magnet\\process.dll")
-# c_test.hello()
-# c_test.get.restype = c_char_p
-# print(c_test.get().decode())

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" aria-label="-5 clear item">
+    <!-- outer badge circle (keep it) -->
+    <circle cx="128" cy="128" r="100" fill="#0000FF" stroke="#FFD54A" stroke-width="10"/>
+    <!-- symmetric 5-point star (solid blue), 크기 키움, 완전 중앙 정렬 -->
+    <polygon points="128,28 150.6,97.1 223.1,97.1 164.3,139.8 186.8,208.9 128,166.2 69.2,208.9 91.7,139.8 32.9,97.1 105.5,97.1"
+            fill="#FFD54A" stroke-width="0" stroke-linejoin="round" />
+    <!-- 중앙 텍스트 -5 : Inter Bold 권장. stroke로 작은 크기 시 판독성 보강 -->
+    <text x="128" y="140" text-anchor="middle" dominant-baseline="middle" font-size="78" font-weight="600"
+        fill="#000000" paint-order="stroke fill">
+        -5
+    </text>
+</svg>
