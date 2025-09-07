@@ -57,5 +57,7 @@ username TEXT NOT NULL UNIQUE,
 password TEXT NOT NULL,
 score INTEGER DEFAULT 0"""
 
+game_size = "1440x960"
+
 with open("./data/words.json", "r") as f:
     words = json.load(f)
