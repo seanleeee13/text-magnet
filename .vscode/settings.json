@@ -12,5 +12,6 @@
     "files.associations": {
         "iostream": "cpp",
         "xstring": "cpp"
-    }
+    },
+    "code-runner.ignoreSelection": true
 }
