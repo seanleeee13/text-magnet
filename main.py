@@ -111,8 +111,8 @@ def game_page():
     playing = True
 
 def relative_to_absolute(rel_x, rel_y):
-    w = root.winfo_width()
-    h = root.winfo_height()
+    w = canvas.winfo_width()
+    h = canvas.winfo_height()
     if w/h > ratio:
         draw_w = h * ratio
         draw_h = h
@@ -128,8 +128,8 @@ def relative_to_absolute(rel_x, rel_y):
     return abs_x, abs_y
 
 def absolute_to_relative(abs_x, abs_y):
-    w = root.winfo_width()
-    h = root.winfo_height()
+    w = canvas.winfo_width()
+    h = canvas.winfo_height()
     if w/h > ratio:
         draw_w = h * ratio
         draw_h = h
@@ -145,8 +145,8 @@ def absolute_to_relative(abs_x, abs_y):
     return rel_x, rel_y
 
 def offset_info():
-    w = root.winfo_width()
-    h = root.winfo_height()
+    w = canvas.winfo_width()
+    h = canvas.winfo_height()
     if w/h > ratio:
         draw_w = h * ratio
         offset_x = round((w - draw_w) / 2)
@@ -164,8 +164,7 @@ def offset_info():
     _offset_info = (x_offset_info, y_offset_info)
     return _offset_info
 
-def create_image_advance(canvas, image_path, x1, y1, x2, y2):
-    global tk_img
+def crop_img(canvas, image_path, x1, y1, x2, y2):
     img = Image.open(image_path)
     target_width = x2 - x1
     target_height = y2 - y1
@@ -186,7 +185,7 @@ def create_image_advance(canvas, image_path, x1, y1, x2, y2):
         offset_y = (new_height - target_height) // 2
         img_cropped = img_resized.crop((0, offset_y, target_width, offset_y + target_height))
     tk_img = ImageTk.PhotoImage(img_cropped)
-    return canvas.create_image(x1, y1, anchor='nw', image=tk_img)
+    return tk_img
 
 def quit():
     global running
@@ -305,14 +304,18 @@ lbl_txt = Label(game, text="Letters: ", font=font.Font(size=20))
 lbl_txt.pack(fill="y", pady=10)
 main.pack(expand=True, fill="both")
 
-magnet = (10, rel_height - 20, 30, rel_height)
+magnet = (rel_width // 2 - 50, rel_height - 100, rel_width // 2 + 50, rel_height)
 
 while running:
     if playing:
         canvas.delete("all")
         offset = offset_info()
-        create_image_advance(canvas, "img/background.png", offset[0][0][1], offset[1][0][1], offset[0][1][0], offset[1][1][0])
+        print(offset[0][0][1], offset[1][0][1], offset[0][1][0], offset[1][1][0])
+        print(canvas.winfo_width(), canvas.winfo_height())
+        bg_img = crop_img(canvas, "img/background.png", offset[0][0][1], offset[1][0][1], offset[0][1][0], offset[1][1][0])
+        canvas.create_image(offset[0][0][1], offset[1][0][1], anchor='nw', image=bg_img)
         magnet_abs = (*relative_to_absolute(magnet[0], magnet[1]), *relative_to_absolute(magnet[2], magnet[3]))
-        create_image_advance(canvas, "img/magnet.png", *magnet_abs)
+        magnet_img = crop_img(canvas, "img/magnet.png", *magnet_abs)
+        canvas.create_image(magnet_abs[0], magnet_abs[1], anchor='nw', image=magnet_img)
     root.update()
     time.sleep(0.01626)
