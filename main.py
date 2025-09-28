@@ -197,7 +197,7 @@ username TEXT NOT NULL UNIQUE,
 password TEXT NOT NULL,
 score INTEGER DEFAULT 0"""
 
-window_size = "1440x960+-8+0"
+window_size = "1440x930+-8+0"
 ratio = 1440 / 960
 rel_width = 960
 rel_height = rel_width / ratio
@@ -222,6 +222,7 @@ root.title(title)
 root.geometry(window_size)
 root.minsize(525, 350)
 root.protocol("WM_DELETE_WINDOW", quit)
+root.state("zoomed")
 
 arrow = ImageTk.PhotoImage(Image.open("img/arrow.png").resize((30, 30), Image.LANCZOS))
 
