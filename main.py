@@ -1,9 +1,10 @@
-from ctypes import CDLL
 from tkinter import *
 from tkinter import _cnfmerge
 from tkinter import messagebox
 from PIL import Image, ImageTk
 from tkinter import font
+from ctypes import CDLL
+import keyboard
 import sqlite3
 import json
 import time
@@ -164,7 +165,7 @@ def offset_info():
     _offset_info = (x_offset_info, y_offset_info)
     return _offset_info
 
-def crop_img(canvas, image_path, x1, y1, x2, y2):
+def crop_img(image_path, x1, y1, x2, y2):
     img = Image.open(image_path)
     target_width = x2 - x1
     target_height = y2 - y1
@@ -208,6 +209,8 @@ title = "Word Game"
 score = 0
 maxscore = 0
 
+speed_abs = 500
+
 running = True
 playing = False
 
@@ -217,6 +220,7 @@ with open("./data/words.json", "r") as f:
 root = Tk()
 root.title(title)
 root.geometry(window_size)
+root.minsize(525, 350)
 root.protocol("WM_DELETE_WINDOW", quit)
 
 arrow = ImageTk.PhotoImage(Image.open("img/arrow.png").resize((30, 30), Image.LANCZOS))
@@ -304,18 +308,71 @@ lbl_txt = Label(game, text="Letters: ", font=font.Font(size=20))
 lbl_txt.pack(fill="y", pady=10)
 main.pack(expand=True, fill="both")
 
-magnet = (rel_width // 2 - 50, rel_height - 100, rel_width // 2 + 50, rel_height)
+magnet = (rel_width // 2 - 50, int(rel_height) - 101, rel_width // 2 + 50, int(rel_height) - 1)
+magnet_edge = (-4, 2, rel_width + 4, rel_height - 2)
+magnet_v = [0, 0]
+
+last_time = time.time()
+frame_count = 0
+frames = 100
+time_count = 0.01
+
+last_win_size = (0, 0)
 
 while running:
     if playing:
+        start_time = time.time()
         canvas.delete("all")
-        offset = offset_info()
-        print(offset[0][0][1], offset[1][0][1], offset[0][1][0], offset[1][1][0])
-        print(canvas.winfo_width(), canvas.winfo_height())
-        bg_img = crop_img(canvas, "img/background.png", offset[0][0][1], offset[1][0][1], offset[0][1][0], offset[1][1][0])
+        win_size = (canvas.winfo_width(), canvas.winfo_height())
+        if last_win_size != win_size:
+            offset = offset_info()
+            bg_img = crop_img("img/background.png", offset[0][0][1], offset[1][0][1], offset[0][1][0], offset[1][1][0])
         canvas.create_image(offset[0][0][1], offset[1][0][1], anchor='nw', image=bg_img)
+        dirc = [0, 0]
+        speed = speed_abs * time_count
+        if keyboard.is_pressed("left"):
+            dirc[0] -= speed
+        if keyboard.is_pressed("right"):
+            dirc[0] += speed
+        if keyboard.is_pressed("up"):
+            dirc[1] -= speed
+        if keyboard.is_pressed("down"):
+            dirc[1] += speed
+        if dirc[0] != 0 and dirc[1] != 0:
+            dirc[0] *= math.sqrt(2) / 2
+            dirc[1] *= math.sqrt(2) / 2
+        magnet_v[0] += dirc[0]
+        magnet_v[1] += dirc[1]
+        magnet_v[0] *= 0.95
+        magnet_v[1] *= 0.95
+        magnet = (magnet[0] + magnet_v[0], magnet[1] + magnet_v[1], magnet[2] + magnet_v[0], magnet[3] + magnet_v[1])
+        if magnet[0] < magnet_edge[0]:
+            dx = magnet_edge[0] - magnet[0]
+            magnet_v[0] = 0
+        elif magnet[2] > magnet_edge[2]:
+            dx = magnet_edge[2] - magnet[2]
+            magnet_v[0] = 0
+        else:
+            dx = 0
+        if magnet[1] < magnet_edge[1]:
+            dy = magnet_edge[1] - magnet[1]
+            magnet_v[1] = 0
+        elif magnet[3] > magnet_edge[3]:
+            dy = magnet_edge[3] - magnet[3]
+            magnet_v[1] = 0
+        else:
+            dy = 0
+        magnet = (magnet[0] + dx, magnet[1] + dy, magnet[2] + dx, magnet[3] + dy)
         magnet_abs = (*relative_to_absolute(magnet[0], magnet[1]), *relative_to_absolute(magnet[2], magnet[3]))
-        magnet_img = crop_img(canvas, "img/magnet.png", *magnet_abs)
+        if last_win_size != win_size:
+            magnet_img = crop_img("img/magnet.png", *magnet_abs)
         canvas.create_image(magnet_abs[0], magnet_abs[1], anchor='nw', image=magnet_img)
+        last_win_size = win_size
+        time_count = time.time() - start_time
+    frame_count += 1
+    if time.time() - last_time >= 1:
+        frames =  int(frame_count / (time.time() - last_time))
+        print(f"{frames} fps")
+        last_time = time.time()
+        frame_count = 0
     root.update()
-    time.sleep(0.01626)
