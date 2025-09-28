@@ -6,6 +6,7 @@ from tkinter import font
 from ctypes import CDLL
 import keyboard
 import sqlite3
+import hashlib
 import json
 import time
 import math
@@ -19,6 +20,7 @@ class DBManager:
         else:
             self.conn = sqlite3.connect(self.file)
         self.c = self.conn.cursor()
+
     def process(self, query, /, table=None, *, col=None, con=None, con_params=(), **kw):
         if query == "create":
             if not col:
@@ -99,6 +101,8 @@ def main_page():
     global playing
     main.pack(expand=True, fill="both")
     playing = False
+    score_lbl.configure(text=("Score: " + str(score)))
+    max_score_lbl.configure(text=("High Score: " + str(maxscore)))
 
 def login_page():
     loginp.pack(expand=True, fill="both")
@@ -188,9 +192,55 @@ def crop_img(image_path, x1, y1, x2, y2):
     tk_img = ImageTk.PhotoImage(img_cropped)
     return tk_img
 
+def encode_str(text):
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+def login_process(username, password):
+    global login, maxscore
+    processed = db.process("select", "user", con="username = ?", con_params=(username, ))
+    if len(processed) > 1:
+        raise ValueError
+    if len(processed) == 0:
+        messagebox.showerror("Incorrect Username", "Incorrect Username")
+        lun_ent.delete(0.0, "end")
+        return
+    if processed[0][2] != encode_str(password):
+        messagebox.showerror("Incorrect Password", "Incorrect Password")
+        lpw_ent.delete(0.0, "end")
+        return
+    login = processed[0]
+    maxscore = processed[0][3]
+
+def login_submit():
+    username = lun_ent.get()
+    password = lpw_ent.get()
+    login_process(username, password)
+    main_page()
+
+def signup_submit():
+    username = sun_ent.get()
+    password = spw_ent.get()
+    passconf = spc_ent.get()
+    processed = db.process("select", "user", con="username = ?", con_params=(username, ))
+    if len(processed) > 1:
+        raise ValueError
+    if len(processed) == 1:
+        messagebox.showerror("Invalid Username", "Invalid Username")
+        sun_ent.delete(0.0, "end")
+        return
+    if password != passconf:
+        messagebox.showerror("Password Different", "Password Different")
+        spw_ent.delete(0.0, "end")
+        spc_ent.delete(0.0, "end")
+        return
+    db.process("insert", "user", username=username, password=encode_str(password))
+    login_process(username, password)
+    main_page()
+
 def quit():
     global running
     running = False
+    db.process("close")
 
 cols = """id INTEGER PRIMARY KEY AUTOINCREMENT,
 username TEXT NOT NULL UNIQUE,
@@ -208,6 +258,7 @@ title = "Word Game"
 
 score = 0
 maxscore = 0
+login = ()
 
 speed_abs = 500
 
@@ -223,6 +274,9 @@ root.geometry(window_size)
 root.minsize(525, 350)
 root.protocol("WM_DELETE_WINDOW", quit)
 root.state("zoomed")
+
+db = DBManager("db/database.db", auto_commit=True)
+db.process("create", "user", col=cols)
 
 arrow = ImageTk.PhotoImage(Image.open("img/arrow.png").resize((30, 30), Image.LANCZOS))
 
@@ -263,7 +317,7 @@ lpw_ent = Entry(password_login, font=font.Font(size=20), show="·")
 lpw_ent.pack(side="right")
 lss = Frame(loginp)
 lss.place(relx=0.5, rely=0.45, anchor="n")
-lsubmit = Button(lss, text="Submit", font=font.Font(size=20), cursor="hand2")
+lsubmit = Button(lss, text="Submit", font=font.Font(size=20), cursor="hand2", command=login_submit)
 lsubmit.pack(side="left")
 signupl = Button(lss, text="Sign Up", command=signup_page, font=font.Font(size=20), cursor="hand2")
 signupl.pack(side="right")
@@ -295,7 +349,7 @@ spc_ent = Entry(passwordconfirm_signup, font=font.Font(size=20), show="·")
 spc_ent.pack(side="right")
 sss = Frame(signupp)
 sss.place(relx=0.5, rely=0.485, anchor="n")
-ssubmit = Button(sss, text="Submit", font=font.Font(size=20), cursor="hand2")
+ssubmit = Button(sss, text="Submit", font=font.Font(size=20), cursor="hand2", command=signup_submit)
 ssubmit.pack(side="left")
 logins = Button(sss, text="Log In", command=login_page, font=font.Font(size=20), cursor="hand2")
 logins.pack(side="right")
