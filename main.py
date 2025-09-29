@@ -115,6 +115,14 @@ def game_page():
     game.pack(expand=True, fill="both")
     playing = True
 
+def mypage_page():
+    mypage.pack(expand=True, fill="both")
+    id_lbl.configure(text=login_data[1])
+    mscore.configure(text=f"High Score: {max(login_data[3], maxscore)}")
+
+def chpw_page():
+    chpw.pack(expand=True, fill="both")
+
 def relative_to_absolute(rel_x, rel_y):
     w = canvas.winfo_width()
     h = canvas.winfo_height()
@@ -196,7 +204,7 @@ def encode_str(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 def login_process(username, password):
-    global login, maxscore
+    global login_data, maxscore
     processed = db.process("select", "user", con="username = ?", con_params=(username, ))
     if len(processed) > 1:
         raise ValueError
@@ -208,8 +216,37 @@ def login_process(username, password):
         messagebox.showerror("Incorrect Password", "Incorrect Password")
         lpw_ent.delete(0.0, "end")
         return
-    login = processed[0]
+    login_data = processed[0]
     maxscore = processed[0][3]
+    login.configure(text="Log Out", command=logout)
+    signup.configure(text="My Page", command=mypage_page)
+
+def logout():
+    global login_data
+    db.process("update", con="username = ?", con_parms=(login_data[1], ), score=maxscore)
+    db.process("commit")
+    login_data = None
+    login.configure(text="Log In", command=login_page)
+    signup.configure(text="Sign Up", command=signup_page)
+
+def chpw_submit():
+    global login_data
+    if login_data[2] != encode_str(pwc_ent.get()):
+        messagebox.showerror("Incorrect Password", "Incorrect Password")
+        pwc_ent.delete(0.0, "end")
+        return
+    if npw_ent.get() != npc_ent.get():
+        messagebox.showerror("Password Different", "Password Different")
+        npw_ent.delete(0.0, "end")
+        npc_ent.delete(0.0, "end")
+        return
+    encoded = encode_str(npw_ent.get())
+    db.process("update", con="username = ?", con_parms=(login_data[1], ), password=encoded)
+    login_data[2] = encoded
+    mypage_page()
+
+def del_acc():
+    raise NotImplementedError
 
 def login_submit():
     username = lun_ent.get()
@@ -258,7 +295,7 @@ title = "Word Game"
 
 score = 0
 maxscore = 0
-login = ()
+login_data = None
 
 speed_abs = 500
 
@@ -355,6 +392,46 @@ logins = Button(sss, text="Log In", command=login_page, font=font.Font(size=20),
 logins.pack(side="right")
 sback = Button(signupp, image=arrow, command=main_page, borderwidth=0, highlightthickness=0, bd=0, relief="flat", cursor="hand2")
 sback.place(relx=0.01, rely=0.01, anchor="nw")
+
+mypage = TkPageFrame(root)
+id_lbl = Label(mypage, font=font.Font(size=30))
+id_lbl.place(relx=0.5, rely=0.25, anchor="n")
+mscore = Label(mypage, font=font.Font(size=20))
+mscore.place(relx=0.5, rely=0.4, anchor="n")
+mbtnfr = Frame(mypage)
+mbtnfr.place(relx=0.5, rely=0.5, anchor="n")
+chpswd = Button(mbtnfr, text="Change Password", font=font.Font(size=15), cursor="hand2", command=chpw_page)
+chpswd.pack(side="left")
+dlacnt = Button(mbtnfr, text="Delete Account", font=font.Font(size=15), cursor="hand2", command=del_acc)
+dlacnt.pack(side="right")
+mback = Button(signupp, image=arrow, command=main_page, borderwidth=0, highlightthickness=0, bd=0, relief="flat", cursor="hand2")
+mback.place(relx=0.01, rely=0.01, anchor="nw")
+
+chpw = TkPageFrame(root)
+chpw_form = Frame(chpw)
+chpw_form.place(relx=0.5, rely=0.35, anchor="n")
+pw_chpw = Frame(chpw_form)
+pw_chpw.pack(anchor="e")
+pwc_lbl = Label(pw_chpw, text="Password  ", font=font.Font(size=20))
+pwc_lbl.pack(side="left")
+pwc_ent = Entry(pw_chpw, font=font.Font(size=20), show="·")
+pwc_ent.pack(side="right")
+npw_chpw = Frame(chpw_form)
+npw_chpw.pack(anchor="e")
+npw_lbl = Label(npw_chpw, text="New Password  ", font=font.Font(size=20))
+npw_lbl.pack(side="left")
+npw_ent = Entry(npw_chpw, font=font.Font(size=20), show="·")
+npw_ent.pack(side="right")
+npc_chpw = Frame(chpw_form)
+npc_chpw.pack(anchor="e")
+npc_lbl = Label(npc_chpw, text="Password Confirm  ", font=font.Font(size=20))
+npc_lbl.pack(side="left")
+npc_ent = Entry(npc_chpw, font=font.Font(size=20), show="·")
+npc_ent.pack(side="right")
+csubmit = Button(chpw, text="Submit", font=font.Font(size=20), cursor="hand2", command=chpw_submit)
+csubmit.place(relx=0.5, rely=0.485, anchor="n")
+cback = Button(chpw, image=arrow, command=mypage_page, borderwidth=0, highlightthickness=0, bd=0, relief="flat", cursor="hand2")
+cback.place(relx=0.01, rely=0.01, anchor="nw")
 
 game = TkPageFrame(root)
 canvas = Canvas(game)
