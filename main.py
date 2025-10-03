@@ -106,9 +106,14 @@ def main_page():
 
 def login_page():
     loginp.pack(expand=True, fill="both")
+    lun_ent.delete(0, "end")
+    lpw_ent.delete(0, "end")
 
 def signup_page():
     signupp.pack(expand=True, fill="both")
+    sun_ent.delete(0, "end")
+    spw_ent.delete(0, "end")
+    spc_ent.delete(0, "end")
 
 def game_page():
     global playing
@@ -122,6 +127,14 @@ def mypage_page():
 
 def chpw_page():
     chpw.pack(expand=True, fill="both")
+    pwc_ent.delete(0, "end")
+    npw_ent.delete(0, "end")
+    npc_ent.delete(0, "end")
+
+def delid_page():
+    delid.pack(expand=True, fill="both")
+    dun_ent.delete(0, "end")
+    dpw_ent.delete(0, "end")
 
 def relative_to_absolute(rel_x, rel_y):
     w = canvas.winfo_width()
@@ -210,11 +223,11 @@ def login_process(username, password):
         raise ValueError
     if len(processed) == 0:
         messagebox.showerror("Incorrect Username", "Incorrect Username")
-        lun_ent.delete(0.0, "end")
+        lun_ent.delete(0, "end")
         return
     if processed[0][2] != encode_str(password):
         messagebox.showerror("Incorrect Password", "Incorrect Password")
-        lpw_ent.delete(0.0, "end")
+        lpw_ent.delete(0, "end")
         return
     login_data = processed[0]
     maxscore = processed[0][3]
@@ -223,8 +236,7 @@ def login_process(username, password):
 
 def logout():
     global login_data
-    db.process("update", con="username = ?", con_parms=(login_data[1], ), score=maxscore)
-    db.process("commit")
+    db.process("update", "user", con="username = ?", con_params=(login_data[1], ), score=maxscore)
     login_data = None
     login.configure(text="Log In", command=login_page)
     signup.configure(text="Sign Up", command=signup_page)
@@ -233,20 +245,38 @@ def chpw_submit():
     global login_data
     if login_data[2] != encode_str(pwc_ent.get()):
         messagebox.showerror("Incorrect Password", "Incorrect Password")
-        pwc_ent.delete(0.0, "end")
+        pwc_ent.delete(0, "end")
         return
     if npw_ent.get() != npc_ent.get():
         messagebox.showerror("Password Different", "Password Different")
-        npw_ent.delete(0.0, "end")
-        npc_ent.delete(0.0, "end")
+        npw_ent.delete(0, "end")
+        npc_ent.delete(0, "end")
         return
     encoded = encode_str(npw_ent.get())
-    db.process("update", con="username = ?", con_parms=(login_data[1], ), password=encoded)
-    login_data[2] = encoded
+    db.process("update", "user", con="username = ?", con_params=(login_data[1], ), password=encoded)
+    login_data = (login_data[0], login_data[1], encoded, login_data[3])
     mypage_page()
 
-def del_acc():
-    raise NotImplementedError
+def delid_submit():
+    global login_data
+    username = dun_ent.get()
+    password = dpw_ent.get()
+    if login_data[1] != username:
+        messagebox.showerror("Incorrect Username", "Incorrect Username")
+        dun_ent.delete(0, "end")
+        return
+    if login_data[2] != encode_str(password):
+        messagebox.showerror("Incorrect Password", "Incorrect Password")
+        dpw_ent.delete(0, "end")
+        return
+    if not messagebox.askyesno("Delete Account", "Are you sure to delete the account? This action cannot be undone.", default="no"):
+        mypage_page()
+        return
+    db.process("delete", "user", con="username = ?", con_params=(login_data[1], ))
+    login_data = None
+    login.configure(text="Log In", command=login_page)
+    signup.configure(text="Sign Up", command=signup_page)
+    main_page()
 
 def login_submit():
     username = lun_ent.get()
@@ -263,12 +293,12 @@ def signup_submit():
         raise ValueError
     if len(processed) == 1:
         messagebox.showerror("Invalid Username", "Invalid Username")
-        sun_ent.delete(0.0, "end")
+        sun_ent.delete(0, "end")
         return
     if password != passconf:
         messagebox.showerror("Password Different", "Password Different")
-        spw_ent.delete(0.0, "end")
-        spc_ent.delete(0.0, "end")
+        spw_ent.delete(0, "end")
+        spc_ent.delete(0, "end")
         return
     db.process("insert", "user", username=username, password=encode_str(password))
     login_process(username, password)
@@ -402,12 +432,14 @@ mbtnfr = Frame(mypage)
 mbtnfr.place(relx=0.5, rely=0.5, anchor="n")
 chpswd = Button(mbtnfr, text="Change Password", font=font.Font(size=15), cursor="hand2", command=chpw_page)
 chpswd.pack(side="left")
-dlacnt = Button(mbtnfr, text="Delete Account", font=font.Font(size=15), cursor="hand2", command=del_acc)
+dlacnt = Button(mbtnfr, text="Delete Account", font=font.Font(size=15), cursor="hand2", command=delid_page)
 dlacnt.pack(side="right")
-mback = Button(signupp, image=arrow, command=main_page, borderwidth=0, highlightthickness=0, bd=0, relief="flat", cursor="hand2")
+mback = Button(mypage, image=arrow, command=main_page, borderwidth=0, highlightthickness=0, bd=0, relief="flat", cursor="hand2")
 mback.place(relx=0.01, rely=0.01, anchor="nw")
 
 chpw = TkPageFrame(root)
+ctitle_lbl = Label(chpw, text="Change Password", font=font.Font(size=30))
+ctitle_lbl.place(relx=0.5, rely=0.25, anchor="n")
 chpw_form = Frame(chpw)
 chpw_form.place(relx=0.5, rely=0.35, anchor="n")
 pw_chpw = Frame(chpw_form)
@@ -432,6 +464,28 @@ csubmit = Button(chpw, text="Submit", font=font.Font(size=20), cursor="hand2", c
 csubmit.place(relx=0.5, rely=0.485, anchor="n")
 cback = Button(chpw, image=arrow, command=mypage_page, borderwidth=0, highlightthickness=0, bd=0, relief="flat", cursor="hand2")
 cback.place(relx=0.01, rely=0.01, anchor="nw")
+
+delid = TkPageFrame(root)
+dtitle_lbl = Label(delid, text="Delete Account", font=font.Font(size=30))
+dtitle_lbl.place(relx=0.5, rely=0.25, anchor="n")
+del_form = Frame(delid)
+del_form.place(relx=0.5, rely=0.35, anchor="n")
+username_delid = Frame(del_form)
+username_delid.pack()
+dun_lbl = Label(username_delid, text="Username  ", font=font.Font(size=20))
+dun_lbl.pack(side="left")
+dun_ent = Entry(username_delid, font=font.Font(size=20))
+dun_ent.pack(side="right")
+password_delid = Frame(del_form)
+password_delid.pack(anchor="e")
+dpw_lbl = Label(password_delid, text="Password  ", font=font.Font(size=20))
+dpw_lbl.pack(side="left")
+dpw_ent = Entry(password_delid, font=font.Font(size=20), show="·")
+dpw_ent.pack(side="right")
+dsubmit = Button(delid, text="Submit", font=font.Font(size=20), cursor="hand2", command=delid_submit)
+dsubmit.place(relx=0.5, rely=0.45, anchor="n")
+dback = Button(delid, image=arrow, command=mypage_page, borderwidth=0, highlightthickness=0, bd=0, relief="flat", cursor="hand2")
+dback.place(relx=0.01, rely=0.01, anchor="nw")
 
 game = TkPageFrame(root)
 canvas = Canvas(game)
