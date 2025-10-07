@@ -108,6 +108,7 @@ def login_page():
     loginp.pack(expand=True, fill="both")
     lun_ent.delete(0, "end")
     lpw_ent.delete(0, "end")
+    lun_ent.focus_set()
 
 def signup_page():
     signupp.pack(expand=True, fill="both")
@@ -216,23 +217,30 @@ def crop_img(image_path, x1, y1, x2, y2):
 def encode_str(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
-def login_process(username, password):
+def login_process(username, password, state):
     global login_data, maxscore
     processed = db.process("select", "user", con="username = ?", con_params=(username, ))
     if len(processed) > 1:
         raise ValueError
     if len(processed) == 0:
+        if state == "signup":
+            raise ValueError
         messagebox.showerror("Incorrect Username", "Incorrect Username")
         lun_ent.delete(0, "end")
+        lun_ent.focus_set()
         return
     if processed[0][2] != encode_str(password):
+        if state == "signup":
+            raise ValueError
         messagebox.showerror("Incorrect Password", "Incorrect Password")
         lpw_ent.delete(0, "end")
+        lpw_ent.focus_set()
         return
     login_data = processed[0]
     maxscore = processed[0][3]
     login.configure(text="Log Out", command=logout)
     signup.configure(text="My Page", command=mypage_page)
+    main_page()
 
 def logout():
     global login_data
@@ -281,8 +289,7 @@ def delid_submit():
 def login_submit():
     username = lun_ent.get()
     password = lpw_ent.get()
-    login_process(username, password)
-    main_page()
+    login_process(username, password, "login")
 
 def signup_submit():
     username = sun_ent.get()
@@ -291,9 +298,14 @@ def signup_submit():
     processed = db.process("select", "user", con="username = ?", con_params=(username, ))
     if len(processed) > 1:
         raise ValueError
-    if len(processed) == 1:
+    if len(processed) == 1 or username == "":
         messagebox.showerror("Invalid Username", "Invalid Username")
         sun_ent.delete(0, "end")
+        return
+    if password == "":
+        messagebox.showerror("Invalid Password", "Invalid Password")
+        spw_ent.delete(0, "end")
+        spc_ent.delete(0, "end")
         return
     if password != passconf:
         messagebox.showerror("Password Different", "Password Different")
@@ -301,8 +313,7 @@ def signup_submit():
         spc_ent.delete(0, "end")
         return
     db.process("insert", "user", username=username, password=encode_str(password))
-    login_process(username, password)
-    main_page()
+    login_process(username, password, "signup")
 
 def quit():
     global running
@@ -382,14 +393,21 @@ lpw_lbl = Label(password_login, text="Password  ", font=font.Font(size=20))
 lpw_lbl.pack(side="left")
 lpw_ent = Entry(password_login, font=font.Font(size=20), show="·")
 lpw_ent.pack(side="right")
-lss = Frame(loginp)
-lss.place(relx=0.5, rely=0.45, anchor="n")
-lsubmit = Button(lss, text="Submit", font=font.Font(size=20), cursor="hand2", command=login_submit)
-lsubmit.pack(side="left")
-signupl = Button(lss, text="Sign Up", command=signup_page, font=font.Font(size=20), cursor="hand2")
-signupl.pack(side="right")
+lsubmit = Button(loginp, text="Log In", font=font.Font(size=20), cursor="hand2", command=login_submit)
+lsubmit.place(relx=0.5, rely=0.45, anchor="n")
+signupllblfr = Frame(loginp)
+signupllblfr.place(relx=0.5, rely=0.55, anchor="n")
+signupllbl = Label(signupllblfr, text="Have no account?", font=font.Font(size=15))
+signupllbl.pack(side="left")
+signupllbn = Label(signupllblfr, text="Sign Up", font=font.Font(size=15), cursor="hand2", foreground="blue")
+signupllbn.pack(side="right")
 lback = Button(loginp, image=arrow, command=main_page, borderwidth=0, highlightthickness=0, bd=0, relief="flat", cursor="hand2")
 lback.place(relx=0.01, rely=0.01, anchor="nw")
+lun_ent.bind("<Return>", lambda _: lpw_ent.focus_set() if not lpw_ent.get() else login_submit())
+lpw_ent.bind("<Return>", lambda _: lun_ent.focus_set() if not lun_ent.get() else login_submit())
+lun_ent.bind("<Escape>", lambda _: main_page())
+lpw_ent.bind("<Escape>", lambda _: main_page())
+signupllbn.bind("<ButtonRelease-1>", lambda _: signup_page())
 
 signupp = TkPageFrame(root)
 stitle_lbl = Label(signupp, text="Sign Up", font=font.Font(size=30))
@@ -414,14 +432,23 @@ spc_lbl = Label(passwordconfirm_signup, text="Password Confirm  ", font=font.Fon
 spc_lbl.pack(side="left")
 spc_ent = Entry(passwordconfirm_signup, font=font.Font(size=20), show="·")
 spc_ent.pack(side="right")
-sss = Frame(signupp)
-sss.place(relx=0.5, rely=0.485, anchor="n")
-ssubmit = Button(sss, text="Submit", font=font.Font(size=20), cursor="hand2", command=signup_submit)
-ssubmit.pack(side="left")
-logins = Button(sss, text="Log In", command=login_page, font=font.Font(size=20), cursor="hand2")
-logins.pack(side="right")
+ssubmit = Button(signupp, text="Sign Up", font=font.Font(size=20), cursor="hand2", command=signup_submit)
+ssubmit.place(relx=0.5, rely=0.485, anchor="n")
+loginslblfr = Frame(signupp)
+loginslblfr.place(relx=0.5, rely=0.585, anchor="n")
+loginslbl = Label(loginslblfr, text="Have account?", font=font.Font(size=15))
+loginslbl.pack(side="left")
+loginslbn = Label(loginslblfr, text="Log in", font=font.Font(size=15), cursor="hand2", foreground="blue")
+loginslbn.pack(side="right")
 sback = Button(signupp, image=arrow, command=main_page, borderwidth=0, highlightthickness=0, bd=0, relief="flat", cursor="hand2")
 sback.place(relx=0.01, rely=0.01, anchor="nw")
+sun_ent.bind("<Return>", lambda _: spw_ent.focus_set() if not spw_ent.get() else spc_ent.focus_set() if not spc_ent.get() else signup_submit())
+spw_ent.bind("<Return>", lambda _: sun_ent.focus_set() if not sun_ent.get() else spc_ent.focus_set() if not spc_ent.get() else signup_submit())
+spc_ent.bind("<Return>", lambda _: sun_ent.focus_set() if not sun_ent.get() else spw_ent.focus_set() if not spw_ent.get() else signup_submit())
+sun_ent.bind("<Escape>", lambda _: main_page())
+spw_ent.bind("<Escape>", lambda _: main_page())
+spc_ent.bind("<Escape>", lambda _: main_page())
+loginslbn.bind("<ButtonRelease-1>", lambda _: login_page())
 
 mypage = TkPageFrame(root)
 id_lbl = Label(mypage, font=font.Font(size=30))
@@ -464,6 +491,12 @@ csubmit = Button(chpw, text="Submit", font=font.Font(size=20), cursor="hand2", c
 csubmit.place(relx=0.5, rely=0.485, anchor="n")
 cback = Button(chpw, image=arrow, command=mypage_page, borderwidth=0, highlightthickness=0, bd=0, relief="flat", cursor="hand2")
 cback.place(relx=0.01, rely=0.01, anchor="nw")
+pwc_ent.bind("<Return>", lambda _: npw_ent.focus_set() if not npw_ent.get() else npc_ent.focus_set() if not npc_ent.get() else chpw_submit())
+npw_ent.bind("<Return>", lambda _: pwc_ent.focus_set() if not pwc_ent.get() else npc_ent.focus_set() if not npc_ent.get() else chpw_submit())
+npc_ent.bind("<Return>", lambda _: pwc_ent.focus_set() if not pwc_ent.get() else npw_ent.focus_set() if not npw_ent.get() else chpw_submit())
+pwc_ent.bind("<Escape>", lambda _: main_page())
+npw_ent.bind("<Escape>", lambda _: main_page())
+npc_ent.bind("<Escape>", lambda _: main_page())
 
 delid = TkPageFrame(root)
 dtitle_lbl = Label(delid, text="Delete Account", font=font.Font(size=30))
@@ -486,6 +519,10 @@ dsubmit = Button(delid, text="Submit", font=font.Font(size=20), cursor="hand2", 
 dsubmit.place(relx=0.5, rely=0.45, anchor="n")
 dback = Button(delid, image=arrow, command=mypage_page, borderwidth=0, highlightthickness=0, bd=0, relief="flat", cursor="hand2")
 dback.place(relx=0.01, rely=0.01, anchor="nw")
+dun_ent.bind("<Return>", lambda _: dpw_ent.focus_set() if not dpw_ent.get() else delid_submit())
+dpw_ent.bind("<Return>", lambda _: dun_ent.focus_set() if not dun_ent.get() else delid_submit())
+dun_ent.bind("<Escape>", lambda _: main_page())
+dpw_ent.bind("<Escape>", lambda _: main_page())
 
 game = TkPageFrame(root)
 canvas = Canvas(game)
