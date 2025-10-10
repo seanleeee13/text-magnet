@@ -98,41 +98,54 @@ class TkPageFrame(Widget):
         super().place_configure(cnf, **kw)
 
 def main_page():
-    global playing
+    global playing, state
+    state = "main"
     main.pack(expand=True, fill="both")
     playing = False
     score_lbl.configure(text=("Score: " + str(score)))
     max_score_lbl.configure(text=("High Score: " + str(maxscore)))
 
 def login_page():
+    global state
+    state = "login"
     loginp.pack(expand=True, fill="both")
     lun_ent.delete(0, "end")
     lpw_ent.delete(0, "end")
     lun_ent.focus_set()
 
 def signup_page():
+    global state
+    state = "signup"
     signupp.pack(expand=True, fill="both")
     sun_ent.delete(0, "end")
     spw_ent.delete(0, "end")
     spc_ent.delete(0, "end")
 
 def game_page():
-    global playing
+    global playing, state
+    state = "game"
     game.pack(expand=True, fill="both")
     playing = True
+    reset()
 
 def mypage_page():
+    global state
+    state = "mypage"
     mypage.pack(expand=True, fill="both")
     id_lbl.configure(text=login_data[1])
     mscore.configure(text=f"High Score: {max(login_data[3], maxscore)}")
 
 def chpw_page():
+    global state
+    state = "change_password"
     chpw.pack(expand=True, fill="both")
     pwc_ent.delete(0, "end")
     npw_ent.delete(0, "end")
     npc_ent.delete(0, "end")
 
 def delid_page():
+    global state
+    state = "delete_id"
     delid.pack(expand=True, fill="both")
     dun_ent.delete(0, "end")
     dpw_ent.delete(0, "end")
@@ -317,8 +330,26 @@ def signup_submit():
 
 def quit():
     global running
+    if not messagebox.askokcancel("Quit Game", "Are you sure to quit the game?", default="cancel"):
+        return
+    if login_data:
+        logout()
     running = False
     db.process("close")
+
+def esc():
+    match state:
+        case "main":
+            quit()
+        case "login" | "signup" | "mypage" | "game":
+            main_page()
+        case "change_password" | "delete_id":
+            mypage_page()
+
+def reset():
+    global magnet, magnet_v
+    magnet = magnet0
+    magnet_v = [0, 0]
 
 cols = """id INTEGER PRIMARY KEY AUTOINCREMENT,
 username TEXT NOT NULL UNIQUE,
@@ -334,11 +365,13 @@ special = ["WORDS", "ORDER", "INPUT", "VOCAB", "LOGIC", "LINKS", "CHAIN", "MERGE
 
 title = "Word Game"
 
+state = "main"
+
 score = 0
 maxscore = 0
 login_data = None
 
-speed_abs = 500
+speed_abs = 300
 
 running = True
 playing = False
@@ -352,6 +385,7 @@ root.geometry(window_size)
 root.minsize(525, 350)
 root.protocol("WM_DELETE_WINDOW", quit)
 root.state("zoomed")
+root.bind("<Escape>", lambda _: esc())
 
 db = DBManager("db/database.db", auto_commit=True)
 db.process("create", "user", col=cols)
@@ -405,8 +439,6 @@ lback = Button(loginp, image=arrow, command=main_page, borderwidth=0, highlightt
 lback.place(relx=0.01, rely=0.01, anchor="nw")
 lun_ent.bind("<Return>", lambda _: lpw_ent.focus_set() if not lpw_ent.get() else login_submit())
 lpw_ent.bind("<Return>", lambda _: lun_ent.focus_set() if not lun_ent.get() else login_submit())
-lun_ent.bind("<Escape>", lambda _: main_page())
-lpw_ent.bind("<Escape>", lambda _: main_page())
 signupllbn.bind("<ButtonRelease-1>", lambda _: signup_page())
 
 signupp = TkPageFrame(root)
@@ -445,9 +477,6 @@ sback.place(relx=0.01, rely=0.01, anchor="nw")
 sun_ent.bind("<Return>", lambda _: spw_ent.focus_set() if not spw_ent.get() else spc_ent.focus_set() if not spc_ent.get() else signup_submit())
 spw_ent.bind("<Return>", lambda _: sun_ent.focus_set() if not sun_ent.get() else spc_ent.focus_set() if not spc_ent.get() else signup_submit())
 spc_ent.bind("<Return>", lambda _: sun_ent.focus_set() if not sun_ent.get() else spw_ent.focus_set() if not spw_ent.get() else signup_submit())
-sun_ent.bind("<Escape>", lambda _: main_page())
-spw_ent.bind("<Escape>", lambda _: main_page())
-spc_ent.bind("<Escape>", lambda _: main_page())
 loginslbn.bind("<ButtonRelease-1>", lambda _: login_page())
 
 mypage = TkPageFrame(root)
@@ -494,9 +523,6 @@ cback.place(relx=0.01, rely=0.01, anchor="nw")
 pwc_ent.bind("<Return>", lambda _: npw_ent.focus_set() if not npw_ent.get() else npc_ent.focus_set() if not npc_ent.get() else chpw_submit())
 npw_ent.bind("<Return>", lambda _: pwc_ent.focus_set() if not pwc_ent.get() else npc_ent.focus_set() if not npc_ent.get() else chpw_submit())
 npc_ent.bind("<Return>", lambda _: pwc_ent.focus_set() if not pwc_ent.get() else npw_ent.focus_set() if not npw_ent.get() else chpw_submit())
-pwc_ent.bind("<Escape>", lambda _: main_page())
-npw_ent.bind("<Escape>", lambda _: main_page())
-npc_ent.bind("<Escape>", lambda _: main_page())
 
 delid = TkPageFrame(root)
 dtitle_lbl = Label(delid, text="Delete Account", font=font.Font(size=30))
@@ -521,8 +547,6 @@ dback = Button(delid, image=arrow, command=mypage_page, borderwidth=0, highlight
 dback.place(relx=0.01, rely=0.01, anchor="nw")
 dun_ent.bind("<Return>", lambda _: dpw_ent.focus_set() if not dpw_ent.get() else delid_submit())
 dpw_ent.bind("<Return>", lambda _: dun_ent.focus_set() if not dun_ent.get() else delid_submit())
-dun_ent.bind("<Escape>", lambda _: main_page())
-dpw_ent.bind("<Escape>", lambda _: main_page())
 
 game = TkPageFrame(root)
 canvas = Canvas(game)
@@ -531,8 +555,9 @@ lbl_txt = Label(game, text="Letters: ", font=font.Font(size=20))
 lbl_txt.pack(fill="y", pady=10)
 main.pack(expand=True, fill="both")
 
-magnet = (rel_width // 2 - 50, int(rel_height) - 101, rel_width // 2 + 50, int(rel_height) - 1)
-magnet_edge = (-4, 2, rel_width + 4, rel_height - 2)
+magnet0 = (rel_width // 2 - 25, int(rel_height) - 51, rel_width // 2 + 25, int(rel_height) - 1)
+magnet = magnet0
+magnet_edge = (-2, 0, rel_width + 2, rel_height)
 magnet_v = [0, 0]
 
 last_time = time.time()
