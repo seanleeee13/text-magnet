@@ -355,29 +355,24 @@ cols = """id INTEGER PRIMARY KEY AUTOINCREMENT,
 username TEXT NOT NULL UNIQUE,
 password TEXT NOT NULL,
 score INTEGER DEFAULT 0"""
+db = DBManager("db/database.db", auto_commit=True)
+db.process("create", "user", col=cols)
 
 window_size = "1440x930+-8+0"
 ratio = 1440 / 960
 rel_width = 960
 rel_height = rel_width / ratio
-
-special = ["WORDS", "ORDER", "INPUT", "VOCAB", "LOGIC", "LINKS", "CHAIN", "MERGE", "GAMES", "CLAIM"]
+last_win_size = (0, 0)
 
 title = "Word Game"
-
-state = "main"
 
 score = 0
 maxscore = 0
 login_data = None
 
-speed_abs = 300
-
-running = True
-playing = False
-
 with open("./data/words.json", "r") as f:
     words = json.load(f)
+special = ["WORDS", "ORDER", "INPUT", "VOCAB", "LOGIC", "LINKS", "CHAIN", "MERGE", "GAMES", "CLAIM"]
 
 root = Tk()
 root.title(title)
@@ -387,10 +382,11 @@ root.protocol("WM_DELETE_WINDOW", quit)
 root.state("zoomed")
 root.bind("<Escape>", lambda _: esc())
 
-db = DBManager("db/database.db", auto_commit=True)
-db.process("create", "user", col=cols)
-
 arrow = ImageTk.PhotoImage(Image.open("img/arrow.png").resize((30, 30), Image.LANCZOS))
+
+state = "main"
+running = True
+playing = False
 
 main = TkPageFrame(root)
 inf = Frame(main)
@@ -559,13 +555,12 @@ magnet0 = (rel_width // 2 - 25, int(rel_height) - 51, rel_width // 2 + 25, int(r
 magnet = magnet0
 magnet_edge = (-2, 0, rel_width + 2, rel_height)
 magnet_v = [0, 0]
+speed_abs = 300
 
 last_time = time.time()
 frame_count = 0
 frames = 100
 time_count = 0.01
-
-last_win_size = (0, 0)
 
 while running:
     if playing:
