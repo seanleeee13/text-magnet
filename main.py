@@ -556,6 +556,12 @@ magnet = magnet0
 magnet_edge = (-2, 0, rel_width + 2, rel_height)
 magnet_v = [0, 0]
 speed_abs = 300
+letter0 = (rel_width // 2 - 25, -50, rel_width // 2 + 25, 0)
+letter = letter0
+letter_v = [0, 0]
+letter_a = 0.5
+magdmx = 150 # off: 10
+grv = 0.1
 
 last_time = time.time()
 frame_count = 0
@@ -607,15 +613,42 @@ while running:
             dy = 0
         magnet = (magnet[0] + dx, magnet[1] + dy, magnet[2] + dx, magnet[3] + dy)
         magnet_abs = (*relative_to_absolute(magnet[0], magnet[1]), *relative_to_absolute(magnet[2], magnet[3]))
+        letter_v[1] += grv
+        dx = ((magnet[0] + magnet[2]) / 2) - ((letter[0] + letter[2]) / 2)
+        dy = magnet[1] - ((letter[1] + letter[3]) / 2)
+        dy2 = ((magnet[1] + magnet[3]) / 2) - ((letter[1] + letter[3]) / 2)
+        length = math.hypot(dx, dy)
+        if math.hypot(dx, dy2) < 150:
+            ma = magdmx * 3
+        else:
+            ma = magdmx
+        letter_magdv = letter_a * max(0, 1 - (length / ma))
+        k = 0.95
+        if math.hypot(dx, dy2) < 50:
+            letter_magdv = 0
+            letter_v[1] -= grv
+            k = 0.75
+        letter_mage = [dx / length, dy / length]
+        letter_magv = [letter_mage[0] * letter_magdv, letter_mage[1] * letter_magdv]
+        letter_v[0] += letter_magv[0]
+        letter_v[1] += letter_magv[1]
+        letter_v[0] *= k
+        letter_v[1] *= k
+        letter = (letter[0] + letter_v[0], letter[1] + letter_v[1], letter[2] + letter_v[0], letter[3] + letter_v[1])
+        letter_abs = (*relative_to_absolute(letter[0], letter[1]), *relative_to_absolute(letter[2], letter[3]))
+        if letter[1] > rel_height:
+            letter = letter0
+            letter_v = [0, 0]
         if last_win_size != win_size:
             magnet_img = crop_img("img/magnet.png", *magnet_abs)
         canvas.create_image(magnet_abs[0], magnet_abs[1], anchor='nw', image=magnet_img)
+        canvas.create_text((letter_abs[0] + letter_abs[2]) // 2, (letter_abs[1] + letter_abs[3]) // 2, \
+            text="A", font=font.Font(size=(letter_abs[3] - letter_abs[1]) // -2))
         last_win_size = win_size
         time_count = time.time() - start_time
     frame_count += 1
-    if time.time() - last_time >= 1:
-        frames =  int(frame_count / (time.time() - last_time))
-        print(f"{frames} fps")
-        last_time = time.time()
-        frame_count = 0
+    frames =  int(frame_count / (time.time() - last_time))
+    print(f"{frames} fps")
+    last_time = time.time()
+    frame_count = 0
     root.update()
