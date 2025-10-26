@@ -2,11 +2,13 @@ from tkinter import *
 from tkinter import _cnfmerge
 from tkinter import messagebox
 from PIL import Image, ImageTk
+from collections import Counter
 from tkinter import font
 from ctypes import CDLL
 import keyboard
 import sqlite3
 import hashlib
+import random
 import json
 import time
 import math
@@ -347,9 +349,13 @@ def esc():
             mypage_page()
 
 def reset():
-    global magnet, magnet_v
+    global magnet, magnet_v, letter, letter_v
     magnet = magnet0
     magnet_v = [0, 0]
+    for i in range(letter_cnt):
+        letter0x[i] = random.randint(25, rel_width - 25)
+        letter[i] = (letter0x[i] - 25, letter0y[0], letter0x[i] + 25, letter0y[1])
+        letter_v[i] = [0, 0]
 
 cols = """id INTEGER PRIMARY KEY AUTOINCREMENT,
 username TEXT NOT NULL UNIQUE,
@@ -373,6 +379,7 @@ login_data = None
 with open("./data/words.json", "r") as f:
     words = json.load(f)
 special = ["WORDS", "ORDER", "INPUT", "VOCAB", "LOGIC", "LINKS", "CHAIN", "MERGE", "GAMES", "CLAIM"]
+letter_list = list(Counter("".join(words)).elements())
 
 root = Tk()
 root.title(title)
@@ -547,7 +554,7 @@ dpw_ent.bind("<Return>", lambda _: dun_ent.focus_set() if not dun_ent.get() else
 game = TkPageFrame(root)
 canvas = Canvas(game)
 canvas.pack(expand=True, fill="both")
-lbl_txt = Label(game, text="Letters: ", font=font.Font(size=20))
+lbl_txt = Label(game, text="Mode: 0", font=font.Font(size=20))
 lbl_txt.pack(fill="y", pady=10)
 main.pack(expand=True, fill="both")
 
@@ -555,22 +562,32 @@ magnet0 = (rel_width // 2 - 25, int(rel_height) - 51, rel_width // 2 + 25, int(r
 magnet = magnet0
 magnet_edge = (-2, 0, rel_width + 2, rel_height)
 magnet_v = [0, 0]
-speed_abs = 300
-letter0 = (rel_width // 2 - 25, -50, rel_width // 2 + 25, 0)
-letter = letter0
-letter_v = [0, 0]
-letter_a = 0.5
-magdmx = 150 # off: 10
+speed_abs = 1
+letter_cnt = 10
+letter0y = (-50, 0)
+letter0x = [random.randint(25, rel_width - 25) for _ in range(letter_cnt)]
+letter = [(letter0x[i] - 25, letter0y[0], letter0x[i] + 25, letter0y[1]) for i in range(letter_cnt)]
+letter_v = [[0, 0]] * letter_cnt
+letters = [random.choice(letter_list) for _ in range(letter_cnt)]
+letter_a = 1
+magdmx = 200
 grv = 0.1
+for i in range(letter_cnt):
+    letter0x[i] = random.randint(25, rel_width - 25)
+    letter[i] = (letter0x[i] - 25, letter0y[0], letter0x[i] + 25, letter0y[1])
+    letter_v[i] = [0, 0]
+
+space = "rel"
+mode = "0"
 
 last_time = time.time()
-frame_count = 0
-frames = 100
-time_count = 0.01
+frames = 60
+frameq = 60
+time_count = 1 / frameq
 
 while running:
+    last_time = time.time()
     if playing:
-        start_time = time.time()
         canvas.delete("all")
         win_size = (canvas.winfo_width(), canvas.winfo_height())
         if last_win_size != win_size:
@@ -578,7 +595,7 @@ while running:
             bg_img = crop_img("img/background.png", offset[0][0][1], offset[1][0][1], offset[0][1][0], offset[1][1][0])
         canvas.create_image(offset[0][0][1], offset[1][0][1], anchor='nw', image=bg_img)
         dirc = [0, 0]
-        speed = speed_abs * time_count
+        speed = speed_abs
         if keyboard.is_pressed("left"):
             dirc[0] -= speed
         if keyboard.is_pressed("right"):
@@ -613,42 +630,79 @@ while running:
             dy = 0
         magnet = (magnet[0] + dx, magnet[1] + dy, magnet[2] + dx, magnet[3] + dy)
         magnet_abs = (*relative_to_absolute(magnet[0], magnet[1]), *relative_to_absolute(magnet[2], magnet[3]))
-        letter_v[1] += grv
-        dx = ((magnet[0] + magnet[2]) / 2) - ((letter[0] + letter[2]) / 2)
-        dy = magnet[1] - ((letter[1] + letter[3]) / 2)
-        dy2 = ((magnet[1] + magnet[3]) / 2) - ((letter[1] + letter[3]) / 2)
-        length = math.hypot(dx, dy)
-        if math.hypot(dx, dy2) < 150:
-            ma = magdmx * 3
-        else:
-            ma = magdmx
-        letter_magdv = letter_a * max(0, 1 - (length / ma))
-        k = 0.95
-        if math.hypot(dx, dy2) < 50:
-            letter_magdv = 0
-            letter_v[1] -= grv
-            k = 0.75
-        letter_mage = [dx / length, dy / length]
-        letter_magv = [letter_mage[0] * letter_magdv, letter_mage[1] * letter_magdv]
-        letter_v[0] += letter_magv[0]
-        letter_v[1] += letter_magv[1]
-        letter_v[0] *= k
-        letter_v[1] *= k
-        letter = (letter[0] + letter_v[0], letter[1] + letter_v[1], letter[2] + letter_v[0], letter[3] + letter_v[1])
-        letter_abs = (*relative_to_absolute(letter[0], letter[1]), *relative_to_absolute(letter[2], letter[3]))
-        if letter[1] > rel_height:
-            letter = letter0
-            letter_v = [0, 0]
         if last_win_size != win_size:
             magnet_img = crop_img("img/magnet.png", *magnet_abs)
         canvas.create_image(magnet_abs[0], magnet_abs[1], anchor='nw', image=magnet_img)
-        canvas.create_text((letter_abs[0] + letter_abs[2]) // 2, (letter_abs[1] + letter_abs[3]) // 2, \
-            text="A", font=font.Font(size=(letter_abs[3] - letter_abs[1]) // -2))
+        if keyboard.is_pressed("1"):
+            if space == "rel":
+                space = "1"
+                mode = "1"
+                magdmx = 300
+                letter_a = 300
+        elif mode == "1":
+            magdmx = 200
+            letter_a = 1
+            mode = "0"
+        if keyboard.is_pressed("2"):
+            if space == "rel":
+                if mode != "0":
+                    magdmx = 200
+                    letter_a = 1
+                    mode = "0"
+                space = "2"
+                mode = "2" if mode == "0" else "0"
+                magdmx = 100 if magdmx == 200 else 200
+                letter_a = 10 if letter_a == 1 else 1
+        if keyboard.is_pressed("3"):
+            if space == "rel":
+                if mode != "0":
+                    magdmx = 200
+                    letter_a = 1
+                    mode = "0"
+                space = "3"
+                mode = "3" if mode == "0" else "0"
+                magdmx = 1000 if magdmx == 200 else 200
+                letter_a = 5 if letter_a == 1 else 1
+        if not (keyboard.is_pressed("1") or keyboard.is_pressed("2") or keyboard.is_pressed("3")):
+            space = "rel"
+        for i in range(letter_cnt):
+            letter_v[i][1] += grv
+            dx = ((magnet[0] + magnet[2]) / 2) - ((letter[i][0] + letter[i][2]) / 2)
+            dy = magnet[1] - ((letter[i][1] + letter[i][3]) / 2)
+            dy2 = ((magnet[1] + magnet[3]) / 2) - ((letter[i][1] + letter[i][3]) / 2)
+            length = math.hypot(dx, dy)
+            if math.hypot(dx, dy2) < magdmx / 4 and mode != "1" and mode != "3":
+                ma = 1000
+            else:
+                ma = magdmx
+            letter_magdv = letter_a * max(0, 1 - (length / ma))
+            print(letter_magdv, letter_a, max(0, 1 - (length / ma)))
+            k = 0.95
+            if ((math.hypot(dx, dy2) < magdmx / 4 and mode != "1" and mode != "3") or (mode == "3" and math.hypot(dx, dy2) < 50)):
+                letter_magdv = 0
+                letter_v[i][1] -= grv
+                k = 0.75
+            letter_mage = [dx / length, dy / length]
+            letter_magv = [letter_mage[0] * letter_magdv, letter_mage[1] * letter_magdv]
+            letter_v[i][0] += letter_magv[0]
+            letter_v[i][1] += letter_magv[1]
+            letter_v[i][0] *= k
+            letter_v[i][1] *= k
+            letter[i] = (letter[i][0] + letter_v[i][0], letter[i][1] + letter_v[i][1], \
+                letter[i][2] + letter_v[i][0], letter[i][3] + letter_v[i][1])
+            letter_abs = (*relative_to_absolute(letter[i][0], letter[i][1]), \
+                *relative_to_absolute(letter[i][2], letter[i][3]))
+            if not (-100 < letter[i][1] < rel_height + 50 and -100 < letter[i][0] < rel_width + 100):
+                letter0x[i] = random.randint(25, rel_width - 25)
+                letter[i] = (letter0x[i] - 25, letter0y[0], letter0x[i] + 25, letter0y[1])
+                letter_v[i] = [0, 0]
+                letters[i] = random.choice(letter_list)
+            canvas.create_text((letter_abs[0] + letter_abs[2]) // 2, (letter_abs[1] + letter_abs[3]) // 2, \
+                text=letters[i], font=font.Font(size=(letter_abs[3] - letter_abs[1]) // -2))
         last_win_size = win_size
-        time_count = time.time() - start_time
-    frame_count += 1
-    frames =  int(frame_count / (time.time() - last_time))
-    print(f"{frames} fps")
-    last_time = time.time()
-    frame_count = 0
+        lbl_txt.configure(text=f"Mode: {mode} Space: {space}")
+        print(space)
     root.update()
+    time.sleep(max(0, 1 / frameq + last_time - time.time()))
+    frames =  int(1 / (time.time() - last_time))
+    print(f"{frames} fps")
