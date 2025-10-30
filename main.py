@@ -572,6 +572,7 @@ letters = []
 letter_a = 1
 magdmx = 200
 grv = 0.1
+atch = []
 
 space = "rel"
 mode = "0"
@@ -668,7 +669,9 @@ while running:
             letters.append(random.choice(letter_list))
             letter_cnt += 1
         dels = []
+        atch = []
         for i in range(letter_cnt):
+            atchd = False
             letter_v[i][1] += grv
             dx = ((magnet[0] + magnet[2]) / 2) - ((letter[i][0] + letter[i][2]) / 2)
             dy = magnet[1] - ((letter[i][1] + letter[i][3]) / 2)
@@ -679,9 +682,13 @@ while running:
             else:
                 ma = magdmx
             letter_magdv = letter_a * max(0, 1 - (length / ma))
-            print(letter_magdv, letter_a, max(0, 1 - (length / ma)))
+            if letter_magdv > 0 and len(atch) < 5:
+                atch.append(letters[i])
+                atchd = True
+            else:
+                letter_magdv = 0
             k = 0.95
-            if ((math.hypot(dx, dy2) < magdmx / 4 and mode != "1" and mode != "3") or (mode == "3" and math.hypot(dx, dy2) < 50)):
+            if (((math.hypot(dx, dy2) < magdmx / 4 and mode != "1" and mode != "3") or (mode == "3" and math.hypot(dx, dy2) < 50))) and atchd:
                 letter_magdv = 0
                 letter_v[i][1] -= grv
                 k = 0.75
@@ -705,8 +712,7 @@ while running:
             del letter0x[j], letter[j], letter_v[j], letters[j], rg[j]
             letter_cnt -= 1
         last_win_size = win_size
-        lbl_txt.configure(text=f"Mode: {mode} Space: {space}")
-        print(space)
+        lbl_txt.configure(text=f"Mode: {mode} | Letters: {", ".join(atch)}")
     root.update()
     time.sleep(max(0, 1 / frameq + last_time - time.time()))
     frames =  int(1 / (time.time() - last_time))
