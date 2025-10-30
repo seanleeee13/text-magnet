@@ -3,6 +3,7 @@ from tkinter import _cnfmerge
 from tkinter import messagebox
 from PIL import Image, ImageTk
 from collections import Counter
+from itertools import permutations
 from tkinter import font
 from ctypes import CDLL
 import keyboard
@@ -349,7 +350,7 @@ def esc():
             mypage_page()
 
 def reset():
-    global magnet, magnet_v, letter_cnt, letter0x, letter, letter_v, letters, atch, bomb_cnt, bomb0x, bomb, bomb_v, mode, magdmx, letter_a
+    global magnet, magnet_v, letter_cnt, letter0x, letter, letter_v, letters, atch, bomb_cnt, bomb0x, bomb, bomb_v, mode, magdmx, letter_a, score, word_n
     magnet0 = (rel_width // 2 - 25, int(rel_height) - 51, rel_width // 2 + 25, int(rel_height) - 1)
     magnet = magnet0
     magnet_v = [0, 0]
@@ -366,6 +367,8 @@ def reset():
     mode = "0"
     magdmx = 200
     letter_a = 1
+    score = 0
+    word_n = ""
 
 cols = """id INTEGER PRIMARY KEY AUTOINCREMENT,
 username TEXT NOT NULL UNIQUE,
@@ -388,7 +391,8 @@ login_data = None
 
 with open("./data/words.json", "r") as f:
     words = json.load(f)
-special = ["WORDS", "ORDER", "INPUT", "VOCAB", "LOGIC", "LINKS", "CHAIN", "MERGE", "GAMES", "CLAIM"]
+special = ["ORDER", "INPUT", "VOCAB", "LOGIC", "LINKS", "CHAIN", "MERGE", "GAMES", "CLAIM"]
+mostsp = "WORDS"
 letter_list = list(Counter("".join(words)).elements())
 
 root = Tk()
@@ -588,6 +592,7 @@ bomb0x = []
 bomb = []
 bomb_v = []
 newb = True
+word_n = ""
 
 space = "rel"
 mode = "0"
@@ -649,8 +654,8 @@ while running:
             if space == "rel":
                 space = "1"
                 mode = "1"
-                magdmx = 300
-                letter_a = 300
+                magdmx = 100
+                letter_a = -50
         elif mode == "1":
             magdmx = 200
             letter_a = 1
@@ -659,11 +664,11 @@ while running:
             if space == "rel":
                 if mode != "0" and mode != "2":
                     magdmx = 200
-                    letter_a = 1
+                    letter_a = 5
                     mode = "0"
                 space = "2"
                 mode = "2" if mode == "0" else "0"
-                magdmx = 100 if magdmx == 200 else 200
+                magdmx = 75 if magdmx == 200 else 200
                 letter_a = 10 if letter_a == 1 else 1
         if keyboard.is_pressed(4):
             if space == "rel":
@@ -705,10 +710,10 @@ while running:
             if letter_magdv > 0 and len(atch) < 5:
                 atch.append(letters[i])
                 atchd = True
-            else:
+            elif mode != "1":
                 letter_magdv = 0
             k = 0.95
-            if (((math.hypot(dx, dy2) < magdmx / 4 and mode != "1" and mode != "3") or (mode == "3" and math.hypot(dx, dy2) < 50))) and atchd:
+            if (((math.hypot(dx, dy2) < magdmx / 4 and mode != "1" and mode != "3") or (mode in "23" and math.hypot(dx, dy2) < 50))) and atchd:
                 letter_magdv = 0
                 letter_v[i][1] -= grv
                 k = 0.75
@@ -731,6 +736,28 @@ while running:
             j = rg.index(i)
             del letter0x[j], letter[j], letter_v[j], letters[j], rg[j]
             letter_cnt -= 1
+        inc = set(map(lambda i: "".join(i), permutations("".join(atch)))) & set(words)
+        if set(special) & inc and mode != "1":
+            if mostsp in inc:
+                word_n = mostsp
+                score += 10
+            else:
+                word_n = list(set(special) & inc)[0]
+                score += 5
+        elif inc and mode != "1":
+            word_n = list(inc)[0]
+            score += 1
+        if inc:
+            letter_cnt = 0
+            letter0x = []
+            letter = []
+            letter_v = []
+            letters = []
+            atch = []
+            bomb_cnt = 0
+            bomb0x = []
+            bomb = []
+            bomb_v = []
         dels = []
         for i in range(bomb_cnt):
             bomb_v[i][1] += grv
@@ -770,7 +797,7 @@ while running:
             del bomb0x[j], bomb[j], bomb_v[j], rg[j]
             bomb_cnt -= 1
         last_win_size = win_size
-        lbl_txt.configure(text=f"Mode: {mode} | Letters: {", ".join(atch)} | Score: {score}")
+        lbl_txt.configure(text=f"Mode: {mode} | Letters: {", ".join(atch)} | Score: {score} | Word: {word_n}")
     root.update()
     time.sleep(max(0, 1 / frameq + last_time - time.time()))
     frames =  int(1 / (time.time() - last_time))
