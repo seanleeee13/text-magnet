@@ -252,7 +252,7 @@ def login_process(username, password, state):
         lpw_ent.focus_set()
         return
     login_data = processed[0]
-    maxscore = processed[0][3]
+    maxscore = max(processed[0][3], maxscore)
     login.configure(text="Log Out", command=logout)
     signup.configure(text="My Page", command=mypage_page)
     main_page()
@@ -573,6 +573,11 @@ letter_a = 1
 magdmx = 200
 grv = 0.1
 atch = []
+bomb_cnt = 0
+bomb0x = []
+bomb = []
+bomb_v = []
+newb = True
 
 space = "rel"
 mode = "0"
@@ -590,7 +595,7 @@ while running:
         if last_win_size != win_size:
             offset = offset_info()
             bg_img = crop_img("img/background.png", offset[0][0][1], offset[1][0][1], offset[0][1][0], offset[1][1][0])
-        canvas.create_image(offset[0][0][1], offset[1][0][1], anchor='nw', image=bg_img)
+        canvas.create_image(offset[0][0][1], offset[1][0][1], anchor="nw", image=bg_img)
         dirc = [0, 0]
         speed = speed_abs
         if keyboard.is_pressed("left"):
@@ -629,7 +634,7 @@ while running:
         magnet_abs = (*relative_to_absolute(magnet[0], magnet[1]), *relative_to_absolute(magnet[2], magnet[3]))
         if last_win_size != win_size:
             magnet_img = crop_img("img/magnet.png", *magnet_abs)
-        canvas.create_image(magnet_abs[0], magnet_abs[1], anchor='nw', image=magnet_img)
+        canvas.create_image(magnet_abs[0], magnet_abs[1], anchor="nw", image=magnet_img)
         if keyboard.is_pressed(2):
             if space == "rel":
                 space = "1"
@@ -668,6 +673,11 @@ while running:
             letter_v.append([0, 0])
             letters.append(random.choice(letter_list))
             letter_cnt += 1
+        if random.randint(1, 100) == 1 and bomb_cnt <= 10:
+            bomb0x.append(random.randint(25, rel_width - 25))
+            bomb.append((bomb0x[-1] - 25, letter0y[0], bomb0x[-1] + 25, letter0y[1]))
+            bomb_v.append([0, 0])
+            bomb_cnt += 1
         dels = []
         atch = []
         for i in range(letter_cnt):
@@ -711,8 +721,46 @@ while running:
             j = rg.index(i)
             del letter0x[j], letter[j], letter_v[j], letters[j], rg[j]
             letter_cnt -= 1
+        dels = []
+        for i in range(bomb_cnt):
+            bomb_v[i][1] += grv
+            dx = ((magnet[0] + magnet[2]) / 2) - ((bomb[i][0] + bomb[i][2]) / 2)
+            dy = magnet[1] - ((bomb[i][1] + bomb[i][3]) / 2)
+            dy2 = ((magnet[1] + magnet[3]) / 2) - ((bomb[i][1] + bomb[i][3]) / 2)
+            length = math.hypot(dx, dy)
+            if math.hypot(dx, dy2) < magdmx / 4 and mode != "1" and mode != "3":
+                ma = 1000
+            else:
+                ma = magdmx
+            if math.hypot(dx, dy2) < 50 and mode != "1":
+                playing = False
+                if score > maxscore:
+                    maxscore = score
+                main_page()
+            bomb_magdv = letter_a * max(0, 1 - (length / ma))
+            bomb_mage = [dx / length, dy / length]
+            bomb_magv = [bomb_mage[0] * bomb_magdv, bomb_mage[1] * bomb_magdv]
+            bomb_v[i][0] += bomb_magv[0]
+            bomb_v[i][1] += bomb_magv[1]
+            bomb_v[i][0] *= 0.95
+            bomb_v[i][1] *= 0.95
+            bomb[i] = (bomb[i][0] + bomb_v[i][0], bomb[i][1] + bomb_v[i][1], \
+                bomb[i][2] + bomb_v[i][0], bomb[i][3] + bomb_v[i][1])
+            bomb_abs = (*relative_to_absolute(bomb[i][0], bomb[i][1]), \
+                *relative_to_absolute(bomb[i][2], bomb[i][3]))
+            if not (-100 < bomb[i][1] < rel_height + 50 and -100 < bomb[i][0] < rel_width + 100):
+                dels.append(i)
+            if last_win_size != win_size or newb:
+                bomb_img = crop_img("img/bomb.png", *bomb_abs)
+                newb = False
+            canvas.create_image(bomb_abs[0], bomb_abs[1], anchor="nw", image=bomb_img)
+        rg = list(range(bomb_cnt))
+        for i in dels:
+            j = rg.index(i)
+            del bomb0x[j], bomb[j], bomb_v[j], rg[j]
+            bomb_cnt -= 1
         last_win_size = win_size
-        lbl_txt.configure(text=f"Mode: {mode} | Letters: {", ".join(atch)}")
+        lbl_txt.configure(text=f"Mode: {mode} | Letters: {", ".join(atch)} | Score: {score}")
     root.update()
     time.sleep(max(0, 1 / frameq + last_time - time.time()))
     frames =  int(1 / (time.time() - last_time))
