@@ -1,11 +1,14 @@
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
-extern "C" __declspec(dllexport) void hello() {
-    cout << "Hello C++!\n";
+int a[121][6];
+
+extern "C" __declspec(dllexport) void calculate(char *p) {
+    
 }
 
-extern "C" __declspec(dllexport) const char* get() {
-    return "Hello Python!";
+extern "C" __declspec(dllexport) int get(int x, int y) {
+    return a[x][y];
 }
