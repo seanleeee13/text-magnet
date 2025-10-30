@@ -563,19 +563,15 @@ magnet = magnet0
 magnet_edge = (-2, 0, rel_width + 2, rel_height)
 magnet_v = [0, 0]
 speed_abs = 1
-letter_cnt = 10
+letter_cnt = 0
 letter0y = (-50, 0)
-letter0x = [random.randint(25, rel_width - 25) for _ in range(letter_cnt)]
-letter = [(letter0x[i] - 25, letter0y[0], letter0x[i] + 25, letter0y[1]) for i in range(letter_cnt)]
-letter_v = [[0, 0]] * letter_cnt
-letters = [random.choice(letter_list) for _ in range(letter_cnt)]
+letter0x = []
+letter = []
+letter_v = []
+letters = []
 letter_a = 1
 magdmx = 200
 grv = 0.1
-for i in range(letter_cnt):
-    letter0x[i] = random.randint(25, rel_width - 25)
-    letter[i] = (letter0x[i] - 25, letter0y[0], letter0x[i] + 25, letter0y[1])
-    letter_v[i] = [0, 0]
 
 space = "rel"
 mode = "0"
@@ -633,7 +629,7 @@ while running:
         if last_win_size != win_size:
             magnet_img = crop_img("img/magnet.png", *magnet_abs)
         canvas.create_image(magnet_abs[0], magnet_abs[1], anchor='nw', image=magnet_img)
-        if keyboard.is_pressed("1"):
+        if keyboard.is_pressed(2):
             if space == "rel":
                 space = "1"
                 mode = "1"
@@ -643,9 +639,9 @@ while running:
             magdmx = 200
             letter_a = 1
             mode = "0"
-        if keyboard.is_pressed("2"):
+        if keyboard.is_pressed(3):
             if space == "rel":
-                if mode != "0":
+                if mode != "0" and mode != "2":
                     magdmx = 200
                     letter_a = 1
                     mode = "0"
@@ -653,9 +649,9 @@ while running:
                 mode = "2" if mode == "0" else "0"
                 magdmx = 100 if magdmx == 200 else 200
                 letter_a = 10 if letter_a == 1 else 1
-        if keyboard.is_pressed("3"):
+        if keyboard.is_pressed(4):
             if space == "rel":
-                if mode != "0":
+                if mode != "0" and mode != "3":
                     magdmx = 200
                     letter_a = 1
                     mode = "0"
@@ -665,6 +661,13 @@ while running:
                 letter_a = 5 if letter_a == 1 else 1
         if not (keyboard.is_pressed("1") or keyboard.is_pressed("2") or keyboard.is_pressed("3")):
             space = "rel"
+        if random.randint(1, 25) == 1 and letter_cnt <= 30:
+            letter0x.append(random.randint(25, rel_width - 25))
+            letter.append((letter0x[-1] - 25, letter0y[0], letter0x[-1] + 25, letter0y[1]))
+            letter_v.append([0, 0])
+            letters.append(random.choice(letter_list))
+            letter_cnt += 1
+        dels = []
         for i in range(letter_cnt):
             letter_v[i][1] += grv
             dx = ((magnet[0] + magnet[2]) / 2) - ((letter[i][0] + letter[i][2]) / 2)
@@ -693,12 +696,14 @@ while running:
             letter_abs = (*relative_to_absolute(letter[i][0], letter[i][1]), \
                 *relative_to_absolute(letter[i][2], letter[i][3]))
             if not (-100 < letter[i][1] < rel_height + 50 and -100 < letter[i][0] < rel_width + 100):
-                letter0x[i] = random.randint(25, rel_width - 25)
-                letter[i] = (letter0x[i] - 25, letter0y[0], letter0x[i] + 25, letter0y[1])
-                letter_v[i] = [0, 0]
-                letters[i] = random.choice(letter_list)
+                dels.append(i)
             canvas.create_text((letter_abs[0] + letter_abs[2]) // 2, (letter_abs[1] + letter_abs[3]) // 2, \
                 text=letters[i], font=font.Font(size=(letter_abs[3] - letter_abs[1]) // -2))
+        rg = list(range(letter_cnt))
+        for i in dels:
+            j = rg.index(i)
+            del letter0x[j], letter[j], letter_v[j], letters[j], rg[j]
+            letter_cnt -= 1
         last_win_size = win_size
         lbl_txt.configure(text=f"Mode: {mode} Space: {space}")
         print(space)
