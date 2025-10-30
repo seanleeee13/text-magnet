@@ -349,13 +349,20 @@ def esc():
             mypage_page()
 
 def reset():
-    global magnet, magnet_v, letter, letter_v
+    global magnet, magnet_v, letter_cnt, letter0x, letter, letter_v, letters, atch, bomb_cnt, bomb0x, bomb, bomb_v
+    magnet0 = (rel_width // 2 - 25, int(rel_height) - 51, rel_width // 2 + 25, int(rel_height) - 1)
     magnet = magnet0
     magnet_v = [0, 0]
-    for i in range(letter_cnt):
-        letter0x[i] = random.randint(25, rel_width - 25)
-        letter[i] = (letter0x[i] - 25, letter0y[0], letter0x[i] + 25, letter0y[1])
-        letter_v[i] = [0, 0]
+    letter_cnt = 0
+    letter0x = []
+    letter = []
+    letter_v = []
+    letters = []
+    atch = []
+    bomb_cnt = 0
+    bomb0x = []
+    bomb = []
+    bomb_v = []
 
 cols = """id INTEGER PRIMARY KEY AUTOINCREMENT,
 username TEXT NOT NULL UNIQUE,
