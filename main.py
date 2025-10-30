@@ -349,7 +349,7 @@ def esc():
             mypage_page()
 
 def reset():
-    global magnet, magnet_v, letter_cnt, letter0x, letter, letter_v, letters, atch, bomb_cnt, bomb0x, bomb, bomb_v
+    global magnet, magnet_v, letter_cnt, letter0x, letter, letter_v, letters, atch, bomb_cnt, bomb0x, bomb, bomb_v, mode, magdmx, letter_a
     magnet0 = (rel_width // 2 - 25, int(rel_height) - 51, rel_width // 2 + 25, int(rel_height) - 1)
     magnet = magnet0
     magnet_v = [0, 0]
@@ -363,6 +363,9 @@ def reset():
     bomb0x = []
     bomb = []
     bomb_v = []
+    mode = "0"
+    magdmx = 200
+    letter_a = 1
 
 cols = """id INTEGER PRIMARY KEY AUTOINCREMENT,
 username TEXT NOT NULL UNIQUE,
