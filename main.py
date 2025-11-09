@@ -100,13 +100,20 @@ class TkPageFrame(Widget):
         self._forget_siblings()
         super().place_configure(cnf, **kw)
 
-def main_page():
+def main_page(win=False):
     global playing, state
     state = "main"
     main.pack(expand=True, fill="both")
     playing = False
     score_lbl.configure(text=("Score: " + str(score)))
     max_score_lbl.configure(text=("High Score: " + str(maxscore)))
+    if win:
+        if hard:
+            win_lbl.configure(text="HARD MODE CLEAR!")
+        else:
+            win_lbl.configure(text="YOU WIN!")
+    else:
+        win_lbl.configure(text="")
 
 def login_page():
     global state
@@ -125,8 +132,9 @@ def signup_page():
     spc_ent.delete(0, "end")
 
 def game_page():
-    global playing, state
+    global playing, state, hard
     state = "game"
+    hard = True
     game.pack(expand=True, fill="both")
     playing = True
     reset()
@@ -391,7 +399,7 @@ login_data = None
 
 with open("./data/words.json", "r") as f:
     words = json.load(f)
-special = ["ORDER", "INPUT", "VOCAB", "LOGIC", "LINKS", "CHAIN", "MERGE", "GAMES", "CLAIM"]
+special = ["ORDER", "INPUT", "VOCAB", "LOGIC", "LINKS", "CHAIN", "MERGE", "GAMES", "CLAIM", "WORDS"]
 mostsp = "WORDS"
 letter_list = list(Counter("".join(words)).elements())
 
@@ -426,6 +434,8 @@ score_lbl = Label(score_fr, text=("Score: " + str(score)), font=font.Font(size=2
 score_lbl.pack(side="left", anchor="w")
 max_score_lbl = Label(score_fr, text=("High Score: " + str(maxscore)), font=font.Font(size=20))
 max_score_lbl.pack(side="right", anchor="e")
+win_lbl = Label(main, text="", font=font.Font(size=20))
+win_lbl.place(relx=0.5, rely=0.8, anchor="n")
 
 loginp = TkPageFrame(root)
 ltitle_lbl = Label(loginp, text="Log In", font=font.Font(size=30))
@@ -576,7 +586,7 @@ magnet0 = (rel_width // 2 - 25, int(rel_height) - 51, rel_width // 2 + 25, int(r
 magnet = magnet0
 magnet_edge = (-2, 0, rel_width + 2, rel_height)
 magnet_v = [0, 0]
-speed_abs = 1
+speed_abs = 0.5
 letter_cnt = 0
 letter0y = (-50, 0)
 letter0x = []
@@ -657,23 +667,23 @@ while running:
                 magdmx = 100
                 letter_a = -50
         elif mode == "1":
-            magdmx = 200
+            magdmx = 150
             letter_a = 1
             mode = "0"
         if keyboard.is_pressed(3):
             if space == "rel":
                 if mode != "0" and mode != "2":
-                    magdmx = 200
+                    magdmx = 150
                     letter_a = 5
                     mode = "0"
                 space = "2"
                 mode = "2" if mode == "0" else "0"
-                magdmx = 75 if magdmx == 200 else 200
-                letter_a = 10 if letter_a == 1 else 1
+                magdmx = 100 if magdmx == 200 else 200
+                letter_a = 15 if letter_a == 1 else 1
         if keyboard.is_pressed(4):
             if space == "rel":
                 if mode != "0" and mode != "3":
-                    magdmx = 200
+                    magdmx = 150
                     letter_a = 1
                     mode = "0"
                 space = "3"
@@ -682,7 +692,7 @@ while running:
                 letter_a = 5 if letter_a == 1 else 1
         if not (keyboard.is_pressed("1") or keyboard.is_pressed("2") or keyboard.is_pressed("3")):
             space = "rel"
-        if random.randint(1, 25) == 1 and letter_cnt <= 30:
+        if random.randint(1, 100) == 1 and letter_cnt <= 30:
             letter0x.append(random.randint(25, rel_width - 25))
             letter.append((letter0x[-1] - 25, letter0y[0], letter0x[-1] + 25, letter0y[1]))
             letter_v.append([0, 0])
@@ -696,6 +706,8 @@ while running:
         dels = []
         atch = []
         for i in range(letter_cnt):
+            if mode == "2":
+                hard = False
             atchd = False
             letter_v[i][1] += grv
             dx = ((magnet[0] + magnet[2]) / 2) - ((letter[i][0] + letter[i][2]) / 2)
@@ -740,10 +752,11 @@ while running:
         if set(special) & inc and mode != "1":
             if mostsp in inc:
                 word_n = mostsp
-                score += 10
+                score += 50
+                main_page(True)
             else:
                 word_n = list(set(special) & inc)[0]
-                score += 5
+                score += 10
         elif inc and mode != "1":
             word_n = list(inc)[0]
             score += 1
