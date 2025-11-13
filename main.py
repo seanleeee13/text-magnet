@@ -358,7 +358,7 @@ def esc():
             mypage_page()
 
 def reset():
-    global magnet, magnet_v, letter_cnt, letter0x, letter, letter_v, letters, atch, bomb_cnt, bomb0x, bomb, bomb_v, mode, magdmx, letter_a, score, word_n
+    global magnet, magnet_v, letter_cnt, letter0x, letter, letter_v, letters, atch, atcf, bomb_cnt, bomb0x, bomb, bomb_v, mode, magdmx, letter_a, score, word_n
     magnet0 = (rel_width // 2 - 25, int(rel_height) - 51, rel_width // 2 + 25, int(rel_height) - 1)
     magnet = magnet0
     magnet_v = [0, 0]
@@ -368,6 +368,7 @@ def reset():
     letter_v = []
     letters = []
     atch = []
+    atcf = []
     bomb_cnt = 0
     bomb0x = []
     bomb = []
@@ -402,6 +403,7 @@ with open("./data/words.json", "r") as f:
 special = ["ORDER", "INPUT", "VOCAB", "LOGIC", "LINKS", "CHAIN", "MERGE", "GAMES", "CLAIM", "WORDS"]
 mostsp = "WORDS"
 letter_list = list(Counter("".join(words)).elements())
+special_letter_list = sum(list(map(list, special + ["WORDS"] * 10)), start=[]) * 100
 
 root = Tk()
 root.title(title)
@@ -580,6 +582,7 @@ canvas = Canvas(game)
 canvas.pack(expand=True, fill="both")
 lbl_txt = Label(game, text="Mode: 0", font=font.Font(size=20))
 lbl_txt.pack(fill="y", pady=10)
+
 main.pack(expand=True, fill="both")
 
 magnet0 = (rel_width // 2 - 25, int(rel_height) - 51, rel_width // 2 + 25, int(rel_height) - 1)
@@ -597,6 +600,7 @@ letter_a = 1
 magdmx = 200
 grv = 0.1
 atch = []
+atcf = []
 bomb_cnt = 0
 bomb0x = []
 bomb = []
@@ -705,6 +709,7 @@ while running:
             bomb_cnt += 1
         dels = []
         atch = []
+        atcf = []
         for i in range(letter_cnt):
             if mode == "2":
                 hard = False
@@ -725,10 +730,15 @@ while running:
             elif mode != "1":
                 letter_magdv = 0
             k = 0.95
-            if (((math.hypot(dx, dy2) < magdmx / 4 and mode != "1" and mode != "3") or (mode in "23" and math.hypot(dx, dy2) < 50))) and atchd:
+            if (((math.hypot(dx, dy2) < magdmx / 4 and mode != "1" and mode != "3") or \
+                (mode in "23" and math.hypot(dx, dy2) < 50))) and atchd:
                 letter_magdv = 0
                 letter_v[i][1] -= grv
                 k = 0.75
+            if (((math.hypot(dx, dy2) < magdmx / 4 + 50 and mode != "1" and mode != "3") or \
+                (mode in "23" and math.hypot(dx, dy2) < 100))) and atchd:
+                atcf.append(letters[i])
+                atchf = True
             letter_mage = [dx / length, dy / length]
             letter_magv = [letter_mage[0] * letter_magdv, letter_mage[1] * letter_magdv]
             letter_v[i][0] += letter_magv[0]
@@ -748,7 +758,7 @@ while running:
             j = rg.index(i)
             del letter0x[j], letter[j], letter_v[j], letters[j], rg[j]
             letter_cnt -= 1
-        inc = set(map(lambda i: "".join(i), permutations("".join(atch)))) & set(words)
+        inc = set(map(lambda i: "".join(i), permutations("".join(atcf)))) & set(words)
         if set(special) & inc and mode != "1":
             if mostsp in inc:
                 word_n = mostsp
@@ -767,6 +777,7 @@ while running:
             letter_v = []
             letters = []
             atch = []
+            atcf = []
             bomb_cnt = 0
             bomb0x = []
             bomb = []
@@ -810,7 +821,7 @@ while running:
             del bomb0x[j], bomb[j], bomb_v[j], rg[j]
             bomb_cnt -= 1
         last_win_size = win_size
-        lbl_txt.configure(text=f"Mode: {mode} | Letters: {", ".join(atch)} | Score: {score} | Word: {word_n}")
+        lbl_txt.configure(text=f"Mode: {mode} | Letters: {", ".join(atcf)} | Score: {score} | Word: {word_n}")
     root.update()
     time.sleep(max(0, 1 / frameq + last_time - time.time()))
     frames =  int(1 / (time.time() - last_time))
