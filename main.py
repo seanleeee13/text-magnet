@@ -435,7 +435,7 @@ score_fr.place(relx=0.5, rely=0.7, anchor="n", relwidth=0.3)
 score_lbl = Label(score_fr, text=("Score: " + str(score)), font=font.Font(size=20))
 score_lbl.pack(side="left", anchor="w")
 max_score_lbl = Label(score_fr, text=("High Score: " + str(maxscore)), font=font.Font(size=20))
-max_score_lbl.pack(side="right", anchor="e")
+max_score_lbl.pack(side="right", anchor="center")
 win_lbl = Label(main, text="", font=font.Font(size=20))
 win_lbl.place(relx=0.5, rely=0.8, anchor="n")
 
@@ -766,10 +766,10 @@ while running:
                 main_page(True)
             else:
                 word_n = list(set(special) & inc)[0]
-                score += 10
+                score += 20
         elif inc and mode != "1":
-            word_n = list(inc)[0]
-            score += 1
+            word_n = ",".join(list(inc))
+            score += 5 * len(list(inc))
         if inc:
             letter_cnt = 0
             letter0x = []
@@ -798,6 +798,7 @@ while running:
                 if score > maxscore:
                     maxscore = score
                 main_page()
+                win_lbl.configure(text="Magnet Crashed by Bomb")
             bomb_magdv = letter_a * max(0, 1 - (length / ma))
             bomb_mage = [dx / length, dy / length]
             bomb_magv = [bomb_mage[0] * bomb_magdv, bomb_mage[1] * bomb_magdv]
