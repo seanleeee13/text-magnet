@@ -404,6 +404,7 @@ special = ["ORDER", "INPUT", "VOCAB", "LOGIC", "LINKS", "CHAIN", "MERGE", "GAMES
 mostsp = "WORDS"
 letter_list = list(Counter("".join(words)).elements())
 special_letter_list = sum(list(map(list, special + ["WORDS"] * 10)), start=[]) * 100
+letter_list += special_letter_list
 
 root = Tk()
 root.title(title)
