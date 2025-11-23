@@ -3,17 +3,15 @@ from tkinter import _cnfmerge
 from tkinter import messagebox
 from PIL import Image, ImageTk
 from collections import Counter
-from itertools import permutations
 from tkinter import font
-from ctypes import CDLL
 import keyboard
+import process
 import sqlite3
 import hashlib
 import random
 import json
 import time
 import math
-import os
 
 class DBManager:
     def __init__(self, file, auto_commit=False):
@@ -403,7 +401,7 @@ with open("./data/words.json", "r") as f:
 special = ["ORDER", "INPUT", "VOCAB", "LOGIC", "LINKS", "CHAIN", "MERGE", "GAMES", "CLAIM", "WORDS"]
 mostsp = "WORDS"
 letter_list = list(Counter("".join(words)).elements())
-special_letter_list = sum(list(map(list, special + ["WORDS"] * 10)), start=[]) * 100
+special_letter_list = sum(list(map(list, special + [mostsp] * 10)), start=[]) * 100
 letter_list += special_letter_list
 
 root = Tk()
@@ -759,19 +757,8 @@ while running:
             j = rg.index(i)
             del letter0x[j], letter[j], letter_v[j], letters[j], rg[j]
             letter_cnt -= 1
-        inc = set(map(lambda i: "".join(i), permutations("".join(atcf)))) & set(words)
-        if set(special) & inc and mode != "1":
-            if mostsp in inc:
-                word_n = mostsp
-                score += 50
-                main_page(True)
-            else:
-                word_n = list(set(special) & inc)[0]
-                score += 20
-        elif inc and mode != "1":
-            word_n = ",".join(list(inc))
-            score += 5 * len(list(inc))
-        if inc:
+        inc = process.calculate("".join(atcf))
+        if len(inc) != 0:
             letter_cnt = 0
             letter0x = []
             letter = []
@@ -783,6 +770,10 @@ while running:
             bomb0x = []
             bomb = []
             bomb_v = []
+            score += process.get_diff()
+            word_n = inc
+        if mostsp in inc:
+            main_page(True)
         dels = []
         for i in range(bomb_cnt):
             bomb_v[i][1] += grv
@@ -823,7 +814,7 @@ while running:
             del bomb0x[j], bomb[j], bomb_v[j], rg[j]
             bomb_cnt -= 1
         last_win_size = win_size
-        lbl_txt.configure(text=f"Mode: {mode} | Letters: {", ".join(atcf)} | Score: {score} | Word: {word_n}")
+        lbl_txt.configure(text=f"Mode: {mode} | Letters: {", ".join(atcf)} | Score: {score} | Word: {", ".join(word_n)}")
     root.update()
     time.sleep(max(0, 1 / frameq + last_time - time.time()))
     frames =  int(1 / (time.time() - last_time))

@@ -9,6 +9,9 @@
         "cpp": "src",
         "compile": "dist"
     },
+    "material-icon-theme.files.associations": {
+        "*.pyd": "python"
+    },
     "files.associations": {
         "*.cpp": "cpp",
         "iostream": "cpp",
@@ -32,7 +35,10 @@
         "xmemory": "cpp",
         "xstddef": "cpp",
         "xtr1common": "cpp",
-        "xutility": "cpp"
-    },
-    "code-runner.ignoreSelection": true
+        "xutility": "cpp",
+        "string": "cpp",
+        "algorithm": "cpp",
+        "set": "cpp",
+        "xtree": "cpp"
+    }
 }
