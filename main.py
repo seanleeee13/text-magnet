@@ -3,23 +3,32 @@ from tkinter import _cnfmerge
 from tkinter import messagebox
 from PIL import Image, ImageTk
 from collections import Counter
+from dotenv import load_dotenv
 from tkinter import font
 import keyboard
+import requests
 import process
 import sqlite3
 import hashlib
+import atexit
 import random
+import base64
 import json
 import time
 import math
+import os
 
 class DBManager:
-    def __init__(self, file, auto_commit=False):
-        self.file = file
-        if auto_commit:
-            self.conn = sqlite3.connect(self.file, isolation_level=None)
+    def __init__(self, file, connected=False, auto_commit=False):
+        if connected:
+            self.file = None
+            self.conn = file
         else:
-            self.conn = sqlite3.connect(self.file)
+            self.file = file
+            if auto_commit:
+                self.conn = sqlite3.connect(self.file, isolation_level=None)
+            else:
+                self.conn = sqlite3.connect(self.file)
         self.c = self.conn.cursor()
 
     def process(self, query, /, table=None, *, col=None, con=None, con_params=(), **kw):
@@ -337,14 +346,36 @@ def signup_submit():
     db.process("insert", "user", username=username, password=encode_str(password))
     login_process(username, password, "signup")
 
+@atexit.register
 def quit():
-    global running
+    global running, _exit
+    if _exit:
+        return
+    _exit = True
     if not messagebox.askokcancel("Quit Game", "Are you sure to quit the game?", default="cancel"):
         return
     if login_data:
         logout()
     running = False
+    db.process("commit")
+    data_txt = db.conn.serialize()
     db.process("close")
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {github_data["token"]}"
+    }
+    url = f"https://api.github.com/repos/{github_data["owner"]}/{github_data["repo"]}/contents/{github_data["path"]}"
+    res = requests.get(url, headers=headers)
+    res.raise_for_status()
+    sha = res.json()["sha"]
+    data_b64 = base64.b64encode(data_txt).decode()
+    data_send = {
+        "message": "update file database.db via GitHub API",
+        "content": data_b64,
+        "sha": sha
+    }
+    res = requests.put(url, json=data_send, headers=headers)
+    res.raise_for_status()
 
 def esc():
     match state:
@@ -377,12 +408,29 @@ def reset():
     score = 0
     word_n = ""
 
+_exit = False
+
 cols = """id INTEGER PRIMARY KEY AUTOINCREMENT,
 username TEXT NOT NULL UNIQUE,
 password TEXT NOT NULL,
 score INTEGER DEFAULT 0"""
-db = DBManager("db/database.db", auto_commit=True)
+
+resp = requests.get("https://github.com/seanleeee13/text-magnet-db/raw/refs/heads/main/database.db")
+resp.raise_for_status()
+
+dbf = sqlite3.connect(":memory:", isolation_level=None)
+dbf.deserialize(resp.content)
+db = DBManager(dbf, connected=True)
 db.process("create", "user", col=cols)
+
+load_dotenv()
+
+github_data = {
+    "owner": "seanleeee13",
+    "repo": "text-magnet-db",
+    "path": "database.db",
+    "token": os.getenv("GITHUB_TOKEN")
+}
 
 window_size = "1440x930+-8+0"
 ratio = 1440 / 960
