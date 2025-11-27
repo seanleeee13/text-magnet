@@ -357,25 +357,26 @@ def quit():
     if login_data:
         logout()
     running = False
-    db.process("commit")
-    data_txt = db.conn.serialize()
-    db.process("close")
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {github_data["token"]}"
-    }
-    url = f"https://api.github.com/repos/{github_data["owner"]}/{github_data["repo"]}/contents/{github_data["path"]}"
-    res = requests.get(url, headers=headers)
-    res.raise_for_status()
-    sha = res.json()["sha"]
-    data_b64 = base64.b64encode(data_txt).decode()
-    data_send = {
-        "message": "update file database.db via GitHub API",
-        "content": data_b64,
-        "sha": sha
-    }
-    res = requests.put(url, json=data_send, headers=headers)
-    res.raise_for_status()
+    if github_data["token"]:
+        db.process("commit")
+        data_txt = db.conn.serialize()
+        db.process("close")
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {github_data["token"]}"
+        }
+        url = f"https://api.github.com/repos/{github_data["owner"]}/{github_data["repo"]}/contents/{github_data["path"]}"
+        res = requests.get(url, headers=headers)
+        res.raise_for_status()
+        sha = res.json()["sha"]
+        data_b64 = base64.b64encode(data_txt).decode()
+        data_send = {
+            "message": "update file database.db via GitHub API",
+            "content": data_b64,
+            "sha": sha
+        }
+        res = requests.put(url, json=data_send, headers=headers)
+        res.raise_for_status()
 
 def esc():
     match state:
