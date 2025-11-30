@@ -16,6 +16,7 @@ import base64
 import json
 import time
 import math
+import sys
 import os
 
 class DBManager:
@@ -171,7 +172,7 @@ def delid_page():
 def relative_to_absolute(rel_x, rel_y):
     w = canvas.winfo_width()
     h = canvas.winfo_height()
-    if w/h > ratio:
+    if w / h > ratio:
         draw_w = h * ratio
         draw_h = h
         offset_x = (w - draw_w) / 2
@@ -188,7 +189,7 @@ def relative_to_absolute(rel_x, rel_y):
 def absolute_to_relative(abs_x, abs_y):
     w = canvas.winfo_width()
     h = canvas.winfo_height()
-    if w/h > ratio:
+    if w / h > ratio:
         draw_w = h * ratio
         draw_h = h
         offset_x = (w - draw_w) / 2
@@ -205,7 +206,7 @@ def absolute_to_relative(abs_x, abs_y):
 def offset_info():
     w = canvas.winfo_width()
     h = canvas.winfo_height()
-    if w/h > ratio:
+    if w / h > ratio:
         draw_w = h * ratio
         offset_x = round((w - draw_w) / 2)
         xloffset = (0, offset_x)
@@ -409,6 +410,11 @@ def reset():
     score = 0
     word_n = ""
 
+if getattr(sys, "frozen", False):
+    base_path = os.path.dirname(sys.executable)
+else:
+    base_path = os.path.dirname(__file__)
+
 _exit = False
 
 cols = """id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -445,7 +451,7 @@ score = 0
 maxscore = 0
 login_data = None
 
-with open("./data/words.json", "r") as f:
+with open(os.path.join(base_path, "data", "words.json"), "r") as f:
     words = json.load(f)
 special = ["ORDER", "INPUT", "VOCAB", "LOGIC", "LINKS", "CHAIN", "MERGE", "GAMES", "CLAIM", "WORDS"]
 mostsp = "WORDS"
@@ -461,7 +467,7 @@ root.protocol("WM_DELETE_WINDOW", quit)
 root.state("zoomed")
 root.bind("<Escape>", lambda _: esc())
 
-arrow = ImageTk.PhotoImage(Image.open("img/arrow.png").resize((30, 30), Image.LANCZOS))
+arrow = ImageTk.PhotoImage(Image.open(os.path.join(base_path, "img", "arrow.png")).resize((30, 30), Image.LANCZOS))
 
 state = "main"
 running = True
@@ -671,7 +677,7 @@ while running:
         win_size = (canvas.winfo_width(), canvas.winfo_height())
         if last_win_size != win_size:
             offset = offset_info()
-            bg_img = crop_img("img/background.png", offset[0][0][1], offset[1][0][1], offset[0][1][0], offset[1][1][0])
+            bg_img = crop_img(os.path.join(base_path, "img", "background.png"), offset[0][0][1], offset[1][0][1], offset[0][1][0], offset[1][1][0])
         canvas.create_image(offset[0][0][1], offset[1][0][1], anchor="nw", image=bg_img)
         dirc = [0, 0]
         speed = speed_abs
@@ -710,7 +716,7 @@ while running:
         magnet = (magnet[0] + dx, magnet[1] + dy, magnet[2] + dx, magnet[3] + dy)
         magnet_abs = (*relative_to_absolute(magnet[0], magnet[1]), *relative_to_absolute(magnet[2], magnet[3]))
         if last_win_size != win_size:
-            magnet_img = crop_img("img/magnet.png", *magnet_abs)
+            magnet_img = crop_img(os.path.join(base_path, "img", "magnet.png"), *magnet_abs)
         canvas.create_image(magnet_abs[0], magnet_abs[1], anchor="nw", image=magnet_img)
         if keyboard.is_pressed(2):
             if space == "rel":
@@ -854,7 +860,7 @@ while running:
             if not (-100 < bomb[i][1] < rel_height + 50 and -100 < bomb[i][0] < rel_width + 100):
                 dels.append(i)
             if last_win_size != win_size or newb:
-                bomb_img = crop_img("img/bomb.png", *bomb_abs)
+                bomb_img = crop_img(os.path.join(base_path, "img", "bomb.png"), *bomb_abs)
                 newb = False
             canvas.create_image(bomb_abs[0], bomb_abs[1], anchor="nw", image=bomb_img)
         rg = list(range(bomb_cnt))
