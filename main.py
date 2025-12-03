@@ -6,13 +6,12 @@ from collections import Counter
 from dotenv import load_dotenv
 from tkinter import font
 import keyboard
-import requests
 import process
 import sqlite3
 import hashlib
 import atexit
 import random
-import base64
+import github
 import json
 import time
 import math
@@ -352,32 +351,22 @@ def quit():
     global running, _exit
     if _exit:
         return
-    _exit = True
     if not messagebox.askokcancel("Quit Game", "Are you sure to quit the game?", default="cancel"):
         return
+    _exit = True
     if login_data:
         logout()
     running = False
-    if github_data["token"]:
+    if github_token:
         db.process("commit")
         data_txt = db.conn.serialize()
         db.process("close")
-        headers = {
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {github_data["token"]}"
-        }
-        url = f"https://api.github.com/repos/{github_data["owner"]}/{github_data["repo"]}/contents/{github_data["path"]}"
-        res = requests.get(url, headers=headers)
-        res.raise_for_status()
-        sha = res.json()["sha"]
-        data_b64 = base64.b64encode(data_txt).decode()
-        data_send = {
-            "message": "update file database.db via GitHub API",
-            "content": data_b64,
-            "sha": sha
-        }
-        res = requests.put(url, json=data_send, headers=headers)
-        res.raise_for_status()
+        repo.update_file(
+            path=file.path,
+            message="update file database.db via GitHub API",
+            content=data_txt,
+            sha=file.sha
+        )
 
 def esc():
     match state:
@@ -417,27 +406,30 @@ else:
 
 _exit = False
 
+if len(sys.argv) > 1:
+    dotenv_path = sys.argv[1]
+    if os.path.exists(dotenv_path):
+        load_dotenv(dotenv_path)
+    else:
+        load_dotenv()
+github_token = os.getenv("GITHUB_TOKEN")
+if github_token:
+    to = github.Auth.Token(github_token)
+    _github = github.Github(auth=to)
+    repo = _github.get_repo("seanleeee13/text-magnet-db")
+    file = repo.get_contents("database.db")
+
 cols = """id INTEGER PRIMARY KEY AUTOINCREMENT,
 username TEXT NOT NULL UNIQUE,
 password TEXT NOT NULL,
 score INTEGER DEFAULT 0"""
 
-resp = requests.get("https://github.com/seanleeee13/text-magnet-db/raw/refs/heads/main/database.db")
-resp.raise_for_status()
-
 dbf = sqlite3.connect(":memory:", isolation_level=None)
-dbf.deserialize(resp.content)
+if github_token:
+    dbf.deserialize(file.decoded_content)
 db = DBManager(dbf, connected=True)
+# db = DBManager("db/database.db", auto_commit=True)
 db.process("create", "user", col=cols)
-
-load_dotenv()
-
-github_data = {
-    "owner": "seanleeee13",
-    "repo": "text-magnet-db",
-    "path": "database.db",
-    "token": os.getenv("GITHUB_TOKEN")
-}
 
 window_size = "1440x930+-8+0"
 ratio = 1440 / 960
@@ -873,4 +865,3 @@ while running:
     root.update()
     time.sleep(max(0, 1 / frameq + last_time - time.time()))
     frames =  int(1 / (time.time() - last_time))
-    print(f"{frames} fps")
