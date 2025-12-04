@@ -168,6 +168,16 @@ def delid_page():
     dun_ent.delete(0, "end")
     dpw_ent.delete(0, "end")
 
+def scoreboard_page():
+    global state
+    state = "scoreboard"
+    scoreboard.pack(expand=True, fill="both")
+    ls = db.process("select", "user")
+    ls = list(map(lambda x: (x[3], x[1]), ls))
+    ls.sort()
+    for line in range(len(ls)):
+        lbx.insert(line + 1, f"{line + 1}. {ls[line][1]} / High Score: {ls[line][0]}")
+
 def relative_to_absolute(rel_x, rel_y):
     w = canvas.winfo_width()
     h = canvas.winfo_height()
@@ -372,7 +382,7 @@ def esc():
     match state:
         case "main":
             quit()
-        case "login" | "signup" | "mypage" | "game":
+        case "login" | "signup" | "mypage" | "game" | "scoreboard":
             main_page()
         case "change_password" | "delete_id":
             mypage_page()
@@ -428,7 +438,6 @@ dbf = sqlite3.connect(":memory:", isolation_level=None)
 if github_token:
     dbf.deserialize(file.decoded_content)
 db = DBManager(dbf, connected=True)
-# db = DBManager("db/database.db", auto_commit=True)
 db.process("create", "user", col=cols)
 
 window_size = "1440x930+-8+0"
@@ -472,6 +481,8 @@ login = Button(inf, text="Log In", font=font.Font(size=20), command=login_page, 
 login.pack(side="right")
 signup = Button(inf, text="Sign Up", font=font.Font(size=20), command=signup_page, cursor="hand2")
 signup.pack(side="left")
+scbd = Button(main, text="Score Board", font=font.Font(size=20), command=scoreboard_page, cursor="hand2")
+scbd.place(relx=0.0, rely=0.0)
 title_lbl = Label(main, text=title, font=font.Font(size=40))
 title_lbl.place(relx=0.5, rely=0.2, anchor="n")
 start = Button(main, text="Start", font=font.Font(size=20), padx=40, pady=20, command=game_page, cursor="hand2")
@@ -628,6 +639,15 @@ canvas = Canvas(game)
 canvas.pack(expand=True, fill="both")
 lbl_txt = Label(game, text="Mode: 0", font=font.Font(size=20))
 lbl_txt.pack(fill="y", pady=10)
+
+scoreboard = TkPageFrame(root)
+lbxfr = Frame(scoreboard)
+lbxfr.pack(expand=True, fill="both")
+lbx = Listbox(lbxfr)
+lbx.pack(side="left", expand=True, fill="both")
+scrlbx = Scrollbar(lbxfr, command=lbx.yview)
+scrlbx.pack(side="right", fill="y")
+lbx.configure(yscrollcommand=scrlbx.set)
 
 main.pack(expand=True, fill="both")
 
